@@ -1,18 +1,20 @@
-import type { Config } from "tailwindcss";
+import type { Config } from "tailwindcss"
+
+import tailwindcssForms from "@tailwindcss/forms"
+import tailwindcssAnimate from "tailwindcss-animate"
+
+import { fontFamily } from "tailwindcss/defaultTheme"
 
 export default {
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
+  darkMode: "class",
   theme: {
     extend: {
-      colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+      fontFamily: {
+        sans: ["var(--font-geist-sans)", ...fontFamily.sans],
+        mono: ["var(--font-geist-mono)", ...fontFamily.mono],
       },
     },
   },
-  plugins: [],
-} satisfies Config;
+  plugins: [tailwindcssForms, tailwindcssAnimate],
+} satisfies Config
