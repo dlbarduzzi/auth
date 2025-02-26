@@ -14,6 +14,15 @@ export default {
         sans: ["var(--font-geist-sans)", ...fontFamily.sans],
         mono: ["var(--font-geist-mono)", ...fontFamily.mono],
       },
+      keyframes: {
+        "soft-spin": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
+        },
+      },
+      animation: {
+        "soft-spin": "soft-spin 1s ease infinite",
+      },
     },
   },
   plugins: [tailwindcssForms, tailwindcssAnimate],

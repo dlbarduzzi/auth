@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import { ButtonSpinner } from "@/components/button-spinner"
 
 export default function Page() {
   return (
@@ -25,6 +26,9 @@ export default function Page() {
           <Button type="button" variant="neutral" disabled={false}>
             Click me
           </Button>
+        </div>
+        <div className="flex gap-3">
+          <ButtonSpinner />
         </div>
       </div>
     </div>

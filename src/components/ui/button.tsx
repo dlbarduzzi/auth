@@ -15,7 +15,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: `bg-indigo-500 text-white hover:bg-indigo-600
-          focus-visible:ring-indigo-500 disabled:text-indigo-100`,
+          focus-visible:ring-indigo-500 disabled:bg-indigo-400
+          disabled:text-indigo-100`,
         neutral: `bg-gray-200 text-gray-600 hover:bg-gray-300
           focus-visible:ring-gray-300 disabled:text-gray-400`,
       },
