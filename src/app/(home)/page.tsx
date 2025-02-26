@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button"
+
 export default function Page() {
   return (
     <div>
@@ -15,6 +17,14 @@ export default function Page() {
             the U.S. Constitution. Most states in the U.S. also have age requirements
             for the offices of Governor, State Senator, and State Representative.
           </p>
+        </div>
+        <div className="flex gap-3">
+          <Button type="button" disabled={false}>
+            Click me
+          </Button>
+          <Button type="button" variant="neutral" disabled={false}>
+            Click me
+          </Button>
         </div>
       </div>
     </div>
