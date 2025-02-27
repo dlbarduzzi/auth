@@ -1,1 +1,1 @@
-export const OAUTH_CALLBACK_PATH = "/api/oauth"
+export const GITHUB_COOKIE_STATE = "github_oauth_state"
