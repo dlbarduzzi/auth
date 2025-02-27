@@ -18,6 +18,11 @@ const tokenSchema = z.object({
   access_token: z.string(),
 })
 
+const tokenSchemaError = z.object({
+  error: z.string(),
+  error_description: z.string(),
+})
+
 export class Github {
   private readonly clientId: string
   private readonly clientSecret: string
@@ -71,6 +76,12 @@ async function getAccessToken(request: Request) {
 
   const data = await resp.json()
 
+  const err = tokenSchemaError.safeParse(data)
+  if (err.success) {
+    const { error, error_description } = err.data
+    throw new GithubTokenError(error, error_description)
+  }
+
   const parsed = tokenSchema.safeParse(data)
   if (!parsed.success) {
     throw new InvalidTokenError(parsed.error)
@@ -81,7 +92,6 @@ async function getAccessToken(request: Request) {
 
 export class UnexpectedError extends Error {
   public status: number
-
   constructor(status: number) {
     super("Unexpected error")
     this.name = "UnexpectedError"
@@ -101,6 +111,16 @@ export class InvalidTokenError extends Error {
     super("Invalid token")
     this.name = "InvalidTokenError"
     this.cause = JSON.stringify(zodError.flatten().fieldErrors)
+  }
+}
+
+export class GithubTokenError extends Error {
+  public error: string
+  constructor(error: string, description: string) {
+    super("Github token error")
+    this.name = "GithubTokenError"
+    this.error = error
+    this.message = description
   }
 }
 

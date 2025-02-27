@@ -5,6 +5,7 @@ import { GITHUB_COOKIE_STATE } from "@/services/oauth/lib/constants"
 import {
   github,
   UnexpectedError,
+  GithubTokenError,
   InvalidStateError,
   InvalidTokenError,
 } from "@/services/oauth/providers/github"
@@ -15,6 +16,7 @@ export async function GET(request: Request) {
     const token = await github.validateAuthorizationCode(code)
     return new Response(null, {
       status: 302,
+      // TODO: Change this to sign-in after sign-up is ready.
       headers: { Location: `/sign-up?token=${token.slice(0, 6)}` },
     })
   } catch (error) {
@@ -29,9 +31,14 @@ export async function GET(request: Request) {
       console.error(error.cause)
     }
 
+    if (error instanceof GithubTokenError) {
+      errorName = error.name
+      console.error(`ERROR - ${error.error} - ${error.message}`)
+    }
+
     if (error instanceof UnexpectedError) {
       errorName = error.name
-      console.error(error.status)
+      console.error(`ERROR - response status (${error.status})`)
     }
 
     if (errorName === "InternalServerError") {
@@ -41,6 +48,7 @@ export async function GET(request: Request) {
     return new Response(null, {
       status: 302,
       headers: {
+        // TODO: Change this to sign-in after sign-up is ready.
         Location: `/sign-up?oauth-error=${encodeURIComponent(errorName)}`,
       },
     })
