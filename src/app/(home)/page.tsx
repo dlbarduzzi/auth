@@ -1,5 +1,6 @@
+import NextLink from "next/link"
+
 import { Button } from "@/components/ui/button"
-import { ButtonSpinner } from "@/components/button-spinner"
 
 export default function Page() {
   return (
@@ -9,26 +10,14 @@ export default function Page() {
           Auth Homepage.
         </h1>
       </section>
-      <div className="max-w-2xl space-y-4 p-4">
-        <div className="border border-gray-200 px-5 py-4">
-          <h1 className="font-bold">Fun Fact</h1>
-          <p className="pt-2">
-            In the United States, a person must be at least 35 to be President or Vice
-            President, 30 to be a Senator, or 25 to be a Representative, as specified in
-            the U.S. Constitution. Most states in the U.S. also have age requirements
-            for the offices of Governor, State Senator, and State Representative.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button type="button" disabled={false}>
-            Click me
+      <div className="p-4">
+        <div className="flex items-center gap-x-3">
+          <Button variant="neutral" asChild>
+            <NextLink href="/sign-in">Sign in</NextLink>
           </Button>
-          <Button type="button" variant="neutral" disabled={false}>
-            Click me
+          <Button asChild>
+            <NextLink href="/sign-up">Sign up</NextLink>
           </Button>
-        </div>
-        <div className="flex gap-3">
-          <ButtonSpinner />
         </div>
       </div>
     </div>
