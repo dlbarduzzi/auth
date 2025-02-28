@@ -31,6 +31,7 @@ const eslintConfig = [
       "n/no-extraneous-import": "off",
       "n/no-process-env": "error",
       "n/no-unsupported-features/node-builtins": "off",
+      "n/no-unsupported-features/es-syntax": ["error", { version: ">=20.0.0" }],
     },
     ignorePatterns: [".next/", "node_modules/"],
   }),

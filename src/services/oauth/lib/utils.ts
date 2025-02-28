@@ -1,3 +1,5 @@
+import type { ZodError } from "zod"
+
 import crypto from "crypto"
 
 export function generateState() {
@@ -13,12 +15,11 @@ export function encodeBasicCredentials(username: string, password: string) {
   return encodeBase64(bytes)
 }
 
-export function createOauthRequest(url: string, body: URLSearchParams) {
-  const request = new Request(url, {
-    method: "POST",
-    body: new TextEncoder().encode(body.toString()),
+export function stringifyZodError(error: ZodError) {
+  const errors: string[] = []
+  Object.entries(error.flatten().fieldErrors).forEach(([field, message]) => {
+    if (!message || message.length < 1) return
+    errors.push(`${field}(${message[0]})`)
   })
-  request.headers.set("Accept", "application/json")
-  request.headers.set("Content-Type", "application/x-www-form-urlencoded")
-  return request
+  return errors.join("::")
 }
