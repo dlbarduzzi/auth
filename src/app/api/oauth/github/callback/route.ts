@@ -1,18 +1,34 @@
+import { z } from "zod"
 import { cookies } from "next/headers"
 
-import { env } from "@/env/server"
 import { github } from "@/services/oauth/github/client"
-import { InvalidRequestError } from "@/services/oauth/lib/request"
+import { stringifyZodError } from "@/services/oauth/lib/utils"
 import { GITHUB_COOKIE_STATE } from "@/services/oauth/github/constants"
+
+import {
+  AppFetchError,
+  InvalidRequestError,
+  UnexpectedResponseError,
+  UnexpectedResponseBodyError,
+} from "@/services/oauth/lib/request"
 
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
     const code = await getCode(url)
     const token = await github.validateAuthorizationCode(code)
-    if (env.NODE_ENV === "development") {
-      console.log({ token })
+    const githubUser = await getGithubUser(token)
+
+    const githubUserEmail = await getGithubUserEmail(token)
+    if (githubUserEmail == null) {
+      return new Response(null, {
+        status: 302,
+        headers: { Location: "/auth/error?status=UserEmailNotVerified" },
+      })
     }
+
+    console.log({ name: githubUser.name, email: githubUserEmail.email })
+
     return new Response(null, { status: 302, headers: { Location: "/" } })
   } catch (error) {
     console.log(error)
@@ -36,4 +52,78 @@ async function getCode(url: URL) {
   }
 
   return code
+}
+
+async function getGithubUser(token: string) {
+  const request = new Request("https://api.github.com/user")
+  request.headers.set("Authorization", `Bearer ${token}`)
+  let response: Response
+  try {
+    response = await fetch(request)
+  } catch (e) {
+    throw new AppFetchError(e)
+  }
+  if (response.status !== 200) {
+    throw new UnexpectedResponseError(response.status)
+  }
+  let data: unknown
+  try {
+    data = await response.json()
+  } catch {
+    throw new UnexpectedResponseError(response.status)
+  }
+  const userResponse = z.object({
+    id: z.number(),
+    name: z.string(),
+    login: z.string(),
+    avatar_url: z.string(),
+  })
+  const user = userResponse.safeParse(data)
+  if (!user.success) {
+    throw new UnexpectedResponseBodyError(
+      "bad-user-response",
+      response.status,
+      stringifyZodError(user.error)
+    )
+  }
+  return user.data
+}
+
+async function getGithubUserEmail(token: string) {
+  const request = new Request("https://api.github.com/user/emails")
+  request.headers.set("Authorization", `Bearer ${token}`)
+  let response: Response
+  try {
+    response = await fetch(request)
+  } catch (e) {
+    throw new AppFetchError(e)
+  }
+  if (response.status !== 200) {
+    throw new UnexpectedResponseError(response.status)
+  }
+  let data: unknown
+  try {
+    data = await response.json()
+  } catch {
+    throw new UnexpectedResponseError(response.status)
+  }
+  const emailsResponse = z.array(
+    z.object({
+      email: z.string(),
+      primary: z.boolean(),
+      verified: z.boolean(),
+    })
+  )
+  const emails = emailsResponse.safeParse(data)
+  if (!emails.success) {
+    throw new UnexpectedResponseBodyError(
+      "bad-user-email-response",
+      response.status,
+      stringifyZodError(emails.error)
+    )
+  }
+  for (const email of emails.data) {
+    if (email.primary) return email
+  }
+  return null
 }

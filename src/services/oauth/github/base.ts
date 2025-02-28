@@ -15,7 +15,7 @@ const scopes = ["user:email"]
 const authEndpoint = "https://github.com/login/oauth/authorize"
 const tokenEndpoint = "https://github.com/login/oauth/access_token"
 
-export class GitHub {
+export class Github {
   private readonly clientId: string
   private readonly clientSecret: string
   private readonly redirectURI: string
