@@ -5,7 +5,7 @@ import { GITHUB_COOKIE_STATE } from "@/services/oauth/github/constants"
 
 export async function GET() {
   const state = generateState()
-  const authURL = github.createAuthorizationURL(state, "sign-in")
+  const authURL = github.createAuthorizationURL(state)
   await storeStateCookie(GITHUB_COOKIE_STATE, state)
   return new Response(null, { status: 302, headers: { location: authURL } })
 }

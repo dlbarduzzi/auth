@@ -6,5 +6,5 @@ import { GitHub } from "./base"
 export const github = new GitHub(
   serverEnv.GITHUB_CLIENT_ID,
   serverEnv.GITHUB_CLIENT_SECRET,
-  new URL("/api/oauth/github/callback", clientEnv.NEXT_PUBLIC_APP_URL)
+  new URL("/api/oauth/github/callback", clientEnv.NEXT_PUBLIC_APP_URL).toString()
 )
