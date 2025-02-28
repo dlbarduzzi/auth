@@ -56,9 +56,6 @@ async function sendTokenRequest(request: Request) {
     throw new AppFetchError(e)
   }
   if (response.status !== 200) {
-    if (response.body !== null) {
-      await response.body.cancel()
-    }
     throw new UnexpectedResponseError(response.status)
   }
   let data: unknown

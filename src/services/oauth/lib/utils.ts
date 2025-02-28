@@ -16,10 +16,28 @@ export function encodeBasicCredentials(username: string, password: string) {
 }
 
 export function stringifyZodError(error: ZodError) {
-  const errors: string[] = []
-  Object.entries(error.flatten().fieldErrors).forEach(([field, message]) => {
-    if (!message || message.length < 1) return
-    errors.push(`${field}(${message[0]})`)
+  const errors = new Map<string, string>()
+
+  error.issues.map(issue => {
+    if (!issue.path || issue.path.length < 1) {
+      return
+    }
+    if (!issue.message || issue.message.trim() === "") {
+      return
+    }
+    if (typeof issue.path[0] === "string") {
+      errors.set(issue.path[0], issue.message)
+      return
+    }
+    if (issue.path.length === 2 && typeof issue.path[1] === "string") {
+      errors.set(issue.path[1], issue.message)
+      return
+    }
   })
-  return errors.join("::")
+
+  try {
+    return JSON.stringify(Object.fromEntries(errors))
+  } catch {
+    return "Failed to stringify Zod error"
+  }
 }
