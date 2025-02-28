@@ -1,4 +1,9 @@
 export async function GET(request: Request) {
-  console.log(request.url)
-  return Response.json({ ok: true }, { status: 200 })
+  try {
+    console.log(request.url)
+    return new Response(null, { status: 302, headers: { Location: "/" } })
+  } catch (error) {
+    console.log(error)
+    return new Response(null, { status: 302, headers: { Location: "/auth/error" } })
+  }
 }
