@@ -18,12 +18,23 @@ export async function GET(request: Request) {
     const code = await getCode(url)
     const token = await github.validateAuthorizationCode(code)
     const githubUser = await getGithubUser(token)
-
     const githubUserEmail = await getGithubUserEmail(token)
+
     if (githubUserEmail == null) {
       return new Response(null, {
         status: 302,
-        headers: { Location: "/auth/error?status=UserEmailNotVerified" },
+        headers: {
+          Location: "/auth/error?provider=github&status=PrimaryUserEmailNotFound",
+        },
+      })
+    }
+
+    if (!githubUserEmail.verified) {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/auth/error?provider=github&status=UserEmailNotVerified",
+        },
       })
     }
 
@@ -32,7 +43,10 @@ export async function GET(request: Request) {
     return new Response(null, { status: 302, headers: { Location: "/" } })
   } catch (error) {
     console.log(error)
-    return new Response(null, { status: 302, headers: { Location: "/auth/error" } })
+    return new Response(null, {
+      status: 302,
+      headers: { Location: "/auth/error?provider=github&status=InternalServerError" },
+    })
   }
 }
 
