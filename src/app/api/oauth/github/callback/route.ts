@@ -1,12 +1,19 @@
+import type { AccountProvider } from "@/db/schemas/users"
+
+import postgres from "postgres"
+
 import { z } from "zod"
 import { eq } from "drizzle-orm"
 import { cookies } from "next/headers"
 
 import { db } from "@/db/conn"
+import { DatabaseError } from "@/db/helpers"
 import { accounts, users } from "@/db/schemas/users"
+
 import { github } from "@/services/oauth/github/client"
-import { stringifyZodError } from "@/services/oauth/lib/utils"
 import { GITHUB_COOKIE_STATE } from "@/services/oauth/github/constants"
+
+import { stringifyZodError } from "@/services/oauth/lib/utils"
 
 import {
   AppFetchError,
@@ -41,8 +48,20 @@ export async function GET(request: Request) {
       })
     }
 
-    // TODO: Finish implementing this.
-    await connectUserAccount(githubUserEmail.email, githubUser.id.toString())
+    const userAccount = await connectUserAccount(
+      githubUserEmail.email,
+      githubUser.avatar_url,
+      "github",
+      githubUser.id.toString()
+    )
+
+    if (userAccount == null) {
+      console.log("Maybe an error happened?")
+    } else if (userAccount === "AUTHENTICATE_USER_WITH_SESSION") {
+      console.log("User exists. We need to authenticate it.")
+    } else {
+      console.log(`New user created with ${userAccount.newUser.id}`)
+    }
 
     return new Response(null, { status: 302, headers: { Location: "/" } })
   } catch (error) {
@@ -54,9 +73,14 @@ export async function GET(request: Request) {
   }
 }
 
-async function connectUserAccount(email: string, providerAccountId: string) {
+async function connectUserAccount(
+  email: string,
+  imageUrl: string,
+  provider: AccountProvider,
+  providerAccountId: string
+) {
   const user = await db.query.users.findFirst({
-    where: eq(users.email, email),
+    where: eq(users.email, email.toLowerCase()),
     columns: { id: true, email: true },
   })
 
@@ -66,10 +90,55 @@ async function connectUserAccount(email: string, providerAccountId: string) {
   })
 
   if (user == null && account == null) {
-    console.log("Should create new user and account...")
+    return await createUserAccount(email, imageUrl, provider, providerAccountId)
   }
 
-  console.log({ user, account })
+  return "AUTHENTICATE_USER_WITH_SESSION"
+}
+
+async function createUserAccount(
+  email: string,
+  imageUrl: string,
+  provider: AccountProvider,
+  providerAccountId: string
+) {
+  return await db.transaction(async tx => {
+    try {
+      const [newUser] = await tx
+        .insert(users)
+        .values({ email, imageUrl })
+        .returning({ id: users.id, email: users.email })
+
+      if (newUser == null) {
+        tx.rollback()
+        return
+      }
+
+      const [newAccount] = await tx
+        .insert(accounts)
+        .values({ userId: newUser.id, provider, providerAccountId })
+        .returning({
+          userId: accounts.userId,
+          provider: accounts.provider,
+          providerAccountId: accounts.providerAccountId,
+        })
+
+      if (newAccount == null) {
+        tx.rollback()
+        return
+      }
+
+      return { newUser, newAccount }
+    } catch (error) {
+      if (error instanceof postgres.PostgresError) {
+        throw new DatabaseError(
+          error.message,
+          "database query to create user and account failed"
+        )
+      }
+      throw error
+    }
+  })
 }
 
 async function getCode(url: URL) {
