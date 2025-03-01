@@ -6,6 +6,7 @@ export const env = createEnv({
     NODE_ENV: z.enum(["development", "production"]),
     GITHUB_CLIENT_ID: z.string().min(1),
     GITHUB_CLIENT_SECRET: z.string().min(1),
+    DATABASE_URL: z.string().url(),
   },
   onValidationError: issues => {
     console.error("❌ Invalid server environment variables ❌", issues)
@@ -17,6 +18,7 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
     GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
+    DATABASE_URL: process.env.DATABASE_URL,
     /* eslint-enable n/no-process-env */
   },
   emptyStringAsUndefined: true,

@@ -1,6 +1,9 @@
 import { z } from "zod"
+import { eq } from "drizzle-orm"
 import { cookies } from "next/headers"
 
+import { db } from "@/db/conn"
+import { accounts, users } from "@/db/schemas/users"
 import { github } from "@/services/oauth/github/client"
 import { stringifyZodError } from "@/services/oauth/lib/utils"
 import { GITHUB_COOKIE_STATE } from "@/services/oauth/github/constants"
@@ -38,7 +41,8 @@ export async function GET(request: Request) {
       })
     }
 
-    console.log({ name: githubUser.name, email: githubUserEmail.email })
+    // TODO: Finish implementing this.
+    await connectUserAccount(githubUserEmail.email, githubUser.id.toString())
 
     return new Response(null, { status: 302, headers: { Location: "/" } })
   } catch (error) {
@@ -48,6 +52,24 @@ export async function GET(request: Request) {
       headers: { Location: "/auth/error?provider=github&status=InternalServerError" },
     })
   }
+}
+
+async function connectUserAccount(email: string, providerAccountId: string) {
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, email),
+    columns: { id: true, email: true },
+  })
+
+  const account = await db.query.accounts.findFirst({
+    where: eq(accounts.providerAccountId, providerAccountId),
+    columns: { userId: true, provider: true, providerAccountId: true },
+  })
+
+  if (user == null && account == null) {
+    console.log("Should create new user and account...")
+  }
+
+  console.log({ user, account })
 }
 
 async function getCode(url: URL) {
