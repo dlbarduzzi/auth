@@ -11,6 +11,7 @@ import { DatabaseError } from "@/db/helpers"
 import { accounts, users } from "@/db/schemas/users"
 
 import { github } from "@/services/oauth/github/client"
+import { findUserByEmail, findUserById } from "@/services/oauth/actions/users"
 import { GITHUB_COOKIE_STATE } from "@/services/oauth/github/constants"
 
 import { stringifyZodError } from "@/services/oauth/lib/utils"
@@ -59,6 +60,8 @@ export async function GET(request: Request) {
       console.log("Maybe an error happened?")
     } else if (userAccount === "AUTHENTICATE_USER_WITH_SESSION") {
       console.log("User exists. We need to authenticate it.")
+    } else if (userAccount === "SHOULD_UPDATE_USER_EMAIL") {
+      console.log("Account exists. We need to update user email.")
     } else {
       console.log(`New user created with ${userAccount.newUser.id}`)
     }
@@ -79,10 +82,7 @@ async function connectUserAccount(
   provider: AccountProvider,
   providerAccountId: string
 ) {
-  const user = await db.query.users.findFirst({
-    where: eq(users.email, email.toLowerCase()),
-    columns: { id: true, email: true },
-  })
+  const user = await findUserByEmail(email)
 
   const account = await db.query.accounts.findFirst({
     where: eq(accounts.providerAccountId, providerAccountId),
@@ -91,6 +91,19 @@ async function connectUserAccount(
 
   if (user == null && account == null) {
     return await createUserAccount(email, imageUrl, provider, providerAccountId)
+  }
+
+  if (user == null && account != null) {
+    const userAccount = await findUserById(account.userId)
+
+    if (userAccount == null) {
+      throw new DatabaseError(
+        "Provider account should not exist without an user",
+        `Provider account with user id ${account.userId} found without an user`
+      )
+    }
+
+    return "SHOULD_UPDATE_USER_EMAIL"
   }
 
   return "AUTHENTICATE_USER_WITH_SESSION"
