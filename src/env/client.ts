@@ -16,4 +16,6 @@ export const env = createEnv({
     /* eslint-enable n/no-process-env */
   },
   emptyStringAsUndefined: true,
+  /* eslint-disable-next-line n/no-process-env */
+  skipValidation: process.env.SKIP_ENV_VALIDATIONS === "true",
 })

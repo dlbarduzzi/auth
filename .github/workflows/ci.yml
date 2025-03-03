@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches:
-      - main
+      - "*"
   pull_request:
     branches:
       - "*"
@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout/v4
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       
@@ -29,9 +29,12 @@ jobs:
         run: npm install
       
       - name: Lint
+        env:
+          SKIP_ENV_VALIDATIONS: "true"
         run: npm run lint
       
       - name: Build
         env:
           NODE_ENV: "production"
+          SKIP_ENV_VALIDATIONS: "true"
         run: npm run build
