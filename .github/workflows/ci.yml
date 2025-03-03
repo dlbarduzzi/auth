@@ -9,8 +9,8 @@ on:
       - "*"
 
 jobs:
-  lint:
-    name: lint
+  test:
+    name: test
     runs-on: ubuntu-latest
 
     steps:
@@ -33,6 +33,17 @@ jobs:
           SKIP_ENV_VALIDATIONS: "true"
         run: npm run lint
       
+      - name: Start docker containers
+        env:
+          POSTGRES_DB: "test_custom_auth"
+          POSTGRES_USER: "username"
+          POSTGRES_PASSWORD: "password"
+        run: |
+          docker compose up -d
+          # Wait for services to be ready (maybe add health checks)
+          sleep 10
+          docker ps
+
       - name: Build
         env:
           NODE_ENV: "production"
