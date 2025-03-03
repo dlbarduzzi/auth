@@ -1,4 +1,6 @@
+import { z } from "zod"
 import { relations } from "drizzle-orm"
+import { createSelectSchema } from "drizzle-zod"
 
 import {
   boolean,
@@ -36,3 +38,6 @@ export const userRelations = relations(users, ({ one }) => ({
   account: one(accounts),
   password: one(passwords),
 }))
+
+export const userSchema = createSelectSchema(users)
+export type UserSchema = z.infer<typeof userSchema>
