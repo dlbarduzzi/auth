@@ -12,9 +12,6 @@ export default function Page() {
       </section>
       <div className="p-4">
         <div className="flex items-center gap-x-3">
-          <Button variant="neutral" asChild>
-            <NextLink href="/sign-in">Sign in</NextLink>
-          </Button>
           <Button asChild>
             <NextLink href="/sign-up">Sign up</NextLink>
           </Button>

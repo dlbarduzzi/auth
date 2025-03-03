@@ -4,7 +4,7 @@ import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/spinner"
+import { Spinner } from "@/components/ui/spinner"
 
 import { delay } from "@/lib/utils"
 

@@ -9,7 +9,7 @@ export function SignUpForm() {
     <div>
       <div>
         <Button asChild>
-          <NextLink href="/api/oauth/github">Sign up with Github</NextLink>
+          <NextLink href="/api/oauth/github">GitHub</NextLink>
         </Button>
       </div>
     </div>
