@@ -1,17 +1,20 @@
 import type { AccountProvider } from "@/db/schemas/users"
 
-import postgres from "postgres"
-
 import { z } from "zod"
 import { eq } from "drizzle-orm"
 import { cookies } from "next/headers"
 
 import { db } from "@/db/conn"
+import { accounts } from "@/db/schemas/users"
 import { DatabaseError } from "@/db/helpers"
-import { accounts, users } from "@/db/schemas/users"
 
 import { github } from "@/services/oauth/github/client"
-import { findUserByEmail, findUserById } from "@/services/oauth/actions/users"
+import {
+  updateUser,
+  findUserById,
+  findUserByEmail,
+  createUserAccount,
+} from "@/services/oauth/actions/users"
 import { GITHUB_COOKIE_STATE } from "@/services/oauth/github/constants"
 
 import { stringifyZodError } from "@/services/oauth/lib/utils"
@@ -35,7 +38,7 @@ export async function GET(request: Request) {
       return new Response(null, {
         status: 302,
         headers: {
-          Location: "/auth/error?provider=github&status=PrimaryUserEmailNotFound",
+          Location: createAuthorizationErrorURL("github", "PrimaryUserEmailNotFound"),
         },
       })
     }
@@ -44,7 +47,7 @@ export async function GET(request: Request) {
       return new Response(null, {
         status: 302,
         headers: {
-          Location: "/auth/error?provider=github&status=UserEmailNotVerified",
+          Location: createAuthorizationErrorURL("github", "UserEmailNotVerified"),
         },
       })
     }
@@ -56,32 +59,51 @@ export async function GET(request: Request) {
       githubUser.id.toString()
     )
 
-    if (userAccount == null) {
-      console.log("Maybe an error happened?")
-    } else if (userAccount === "AUTHENTICATE_USER_WITH_SESSION") {
-      console.log("User exists. We need to authenticate it.")
-    } else if (userAccount === "SHOULD_UPDATE_USER_EMAIL") {
-      console.log("Account exists. We need to update user email.")
-    } else {
-      console.log(`New user created with ${userAccount.newUser.id}`)
+    if (userAccount.status !== "Success") {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: createAuthorizationErrorURL("github", userAccount.status),
+        },
+      })
     }
+
+    console.log({ status: "Success", email: userAccount.user.email })
 
     return new Response(null, { status: 302, headers: { Location: "/" } })
   } catch (error) {
     console.log(error)
     return new Response(null, {
       status: 302,
-      headers: { Location: "/auth/error?provider=github&status=InternalServerError" },
+      headers: {
+        Location: createAuthorizationErrorURL("github", "InternalServerError"),
+      },
     })
   }
 }
+
+type Status =
+  | "InternalServerError"
+  | "UserEmailNotVerified"
+  | "PrimaryUserEmailNotFound"
+  | "AccountProviderDoesNotMatch"
+
+function createAuthorizationErrorURL(provider: AccountProvider, status: Status) {
+  return `/auth/error?provider=${provider}&status=${status}`
+}
+
+type ConnectUserAccount =
+  | {
+      status: Status
+    }
+  | { status: "Success"; user: { id: string; email: string } }
 
 async function connectUserAccount(
   email: string,
   imageUrl: string,
   provider: AccountProvider,
   providerAccountId: string
-) {
+): Promise<ConnectUserAccount> {
   const user = await findUserByEmail(email)
 
   const account = await db.query.accounts.findFirst({
@@ -90,7 +112,14 @@ async function connectUserAccount(
   })
 
   if (user == null && account == null) {
-    return await createUserAccount(email, imageUrl, provider, providerAccountId)
+    const result = await createUserAccount(email, imageUrl, provider, providerAccountId)
+    if (result == null) {
+      return { status: "InternalServerError" }
+    }
+    return {
+      status: "Success",
+      user: { id: result.newUser.id, email: result.newUser.email },
+    }
   }
 
   if (user == null && account != null) {
@@ -103,55 +132,29 @@ async function connectUserAccount(
       )
     }
 
-    return "SHOULD_UPDATE_USER_EMAIL"
+    const updatedEmail = await updateUser(account.userId, email, imageUrl)
+    if (updatedEmail == null) {
+      return { status: "InternalServerError" }
+    }
+
+    return { status: "Success", user: updatedEmail }
   }
 
-  return "AUTHENTICATE_USER_WITH_SESSION"
-}
+  if (user != null && account == null) {
+    return { status: "AccountProviderDoesNotMatch" }
+  }
 
-async function createUserAccount(
-  email: string,
-  imageUrl: string,
-  provider: AccountProvider,
-  providerAccountId: string
-) {
-  return await db.transaction(async tx => {
-    try {
-      const [newUser] = await tx
-        .insert(users)
-        .values({ email, imageUrl })
-        .returning({ id: users.id, email: users.email })
-
-      if (newUser == null) {
-        tx.rollback()
-        return
-      }
-
-      const [newAccount] = await tx
-        .insert(accounts)
-        .values({ userId: newUser.id, provider, providerAccountId })
-        .returning({
-          userId: accounts.userId,
-          provider: accounts.provider,
-          providerAccountId: accounts.providerAccountId,
-        })
-
-      if (newAccount == null) {
-        tx.rollback()
-        return
-      }
-
-      return { newUser, newAccount }
-    } catch (error) {
-      if (error instanceof postgres.PostgresError) {
-        throw new DatabaseError(
-          error.message,
-          "database query to create user and account failed"
-        )
-      }
-      throw error
+  if (user != null && account != null) {
+    if (user.id !== account.userId) {
+      throw new DatabaseError(
+        "User and provider account out of sync",
+        `User id ${user.id} and provider user id ${account.userId} should match`
+      )
     }
-  })
+    return { status: "Success", user }
+  }
+
+  return { status: "InternalServerError" }
 }
 
 async function getCode(url: URL) {
