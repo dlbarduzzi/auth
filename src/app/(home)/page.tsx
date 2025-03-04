@@ -13,7 +13,7 @@ export default function Page() {
       <div className="p-4">
         <div className="flex items-center gap-x-3">
           <Button asChild>
-            <NextLink href="/sign-up">Sign up</NextLink>
+            <NextLink href="/signup">Sign up</NextLink>
           </Button>
         </div>
       </div>

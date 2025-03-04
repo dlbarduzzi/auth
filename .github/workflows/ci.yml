@@ -12,6 +12,12 @@ jobs:
   test:
     name: test
     runs-on: ubuntu-latest
+    env:
+      DB_NAME: "test_db"
+      DB_USER: "username"
+      DB_PASS: "password"
+      DATABASE_URL: "postgresql://username:password@localhost:5432/test_db"
+      SKIP_ENV_VALIDATIONS: "true"
 
     steps:
       - name: Checkout
@@ -29,35 +35,23 @@ jobs:
         run: npm install
       
       - name: Lint
-        env:
-          SKIP_ENV_VALIDATIONS: "true"
         run: npm run lint
       
-      - name: Start docker containers
-        env:
-          DB_NAME: "testdb"
-          DB_USER: "username"
-          DB_PASS: "password"
-        run: |
-          docker compose up -d
-          # Wait for services to be ready (maybe add health checks)
-          sleep 10
-
       - name: Build
         env:
           NODE_ENV: "production"
-          SKIP_ENV_VALIDATIONS: "true"
         run: npm run build
 
-      - name: Setup database
-        env:
-          DATABASE_URL: "postgresql://username:password@localhost:5432/testdb"
-          SKIP_ENV_VALIDATIONS: "true"
+      - name: Start docker containers          
+        run: |
+          docker compose up -d
+          # Wait for services to be ready (maybe add health checks)
+          sleep 5
+
+      - name: Setup database          
         run: npm run db:migrate
 
       - name: Test
-        env:
-          DATABASE_URL: "postgresql://username:password@localhost:5432/testdb"
         run: npm run test
 
       - name: Stop docker containers
