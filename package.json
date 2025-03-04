@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "vitest",
+    "test": "SKIP_ENV_VALIDATIONS=true vitest",
+    "test:coverage": "SKIP_ENV_VALIDATIONS=true vitest run --coverage",
     "db:studio": "drizzle-kit studio",
     "db:migrate": "drizzle-kit migrate",
     "db:generate": "drizzle-kit generate"
@@ -36,6 +37,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@typescript-eslint/eslint-plugin": "^8.25.0",
+    "@vitest/coverage-istanbul": "^3.0.7",
     "drizzle-kit": "^0.30.5",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",

@@ -35,17 +35,30 @@ jobs:
       
       - name: Start docker containers
         env:
-          POSTGRES_DB: "test_custom_auth"
-          POSTGRES_USER: "username"
-          POSTGRES_PASSWORD: "password"
+          DB_NAME: "testdb"
+          DB_USER: "username"
+          DB_PASS: "password"
         run: |
           docker compose up -d
           # Wait for services to be ready (maybe add health checks)
           sleep 10
-          docker ps
 
       - name: Build
         env:
           NODE_ENV: "production"
           SKIP_ENV_VALIDATIONS: "true"
         run: npm run build
+
+      - name: Setup database
+        env:
+          DATABASE_URL: "postgresql://username:password@localhost:5432/testdb"
+          SKIP_ENV_VALIDATIONS: "true"
+        run: npm run db:migrate
+
+      - name: Test
+        env:
+          DATABASE_URL: "postgresql://username:password@localhost:5432/testdb"
+        run: npm run test
+
+      - name: Stop docker containers
+        run: docker compose down
