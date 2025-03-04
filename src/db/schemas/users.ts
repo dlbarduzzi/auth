@@ -11,8 +11,6 @@ import {
   uuid,
 } from "drizzle-orm/pg-core"
 
-import { lower } from "@/db/utils"
-
 import { accounts } from "./accounts"
 import { passwords } from "./passwords"
 
@@ -31,7 +29,7 @@ export const users = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  table => [uniqueIndex("email_index").on(lower(table.email))]
+  table => [uniqueIndex("email_index").on(table.email)]
 )
 
 export const userRelations = relations(users, ({ one }) => ({
