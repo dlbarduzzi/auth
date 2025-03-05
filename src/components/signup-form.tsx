@@ -1,5 +1,7 @@
 "use client"
 
+import NextLink from "next/link"
+
 import { Button } from "@/components/ui/button"
 
 import { cn } from "@/lib/utils"
@@ -67,7 +69,15 @@ export function SignUpForm() {
   }
   return (
     <div>
-      <div className="max-w-md divide-y-2 border border-gray-200">
+      <div className="space-x-3">
+        <Button asChild>
+          <NextLink href="/api/oauth/github">GitHub</NextLink>
+        </Button>
+        <Button variant="neutral" asChild>
+          <NextLink href="/api/oauth/google">Google</NextLink>
+        </Button>
+      </div>
+      <div className="mt-5 max-w-md divide-y-2 border border-gray-200">
         {users.map((user, index) => (
           <div key={index} className="flex flex-wrap justify-between gap-3 px-4 py-3">
             <div className="flex flex-col text-sm">
