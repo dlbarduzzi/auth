@@ -9,77 +9,32 @@ import { eq, and } from "drizzle-orm"
 
 import { db } from "@/db/conn"
 import { lowercase } from "@/lib/utils"
+import { AuthDatabaseError } from "@/lib/error"
 
 import { users } from "@/db/schemas/users"
 import { accounts } from "@/db/schemas/accounts"
 import { passwords } from "@/db/schemas/passwords"
 
-class AuthDatabaseError extends Error {
-  constructor(message: string, cause: string) {
-    super(message, { cause })
-    this.name = "AuthDatabaseError"
-  }
-}
-
-export async function findUserByEmail(email: string) {
-  try {
-    return await db.query.users.findFirst({
-      where: eq(users.email, lowercase(email)),
-      columns: { id: true, email: true },
-    })
-  } catch (error) {
-    if (error instanceof postgres.PostgresError) {
-      throw new AuthDatabaseError(
-        error.message,
-        "database query to findUserByEmail failed"
-      )
-    }
-    throw error
-  }
-}
-
-export async function findUserByEmailWithPassword(email: string) {
-  try {
-    return await db.query.users.findFirst({
-      where: eq(users.email, lowercase(email)),
-      columns: { id: true, email: true },
-      with: {
-        password: {
-          columns: { passwordHash: true },
-        },
-      },
-    })
-  } catch (error) {
-    if (error instanceof postgres.PostgresError) {
-      throw new AuthDatabaseError(
-        error.message,
-        "database query to findUserByEmailWithPassword failed"
-      )
-    }
-    throw error
-  }
-}
-
-export async function findUserByEmailWithAccountAndPassword(email: string) {
+export async function findUserByEmail(email: string, withPassword: boolean = false) {
   try {
     return await db.query.users.findFirst({
       where: eq(users.email, lowercase(email)),
       columns: { id: true, email: true },
       with: {
         account: {
-          columns: { userId: true, provider: true, providerId: true },
+          columns: { provider: true, providerId: true },
         },
         password: {
-          columns: { userId: true },
+          columns: { userId: true, passwordHash: withPassword },
         },
       },
     })
   } catch (error) {
     if (error instanceof postgres.PostgresError) {
-      throw new AuthDatabaseError(
-        error.message,
-        "database query to findUserByEmailWithAccountAndPassword failed"
-      )
+      throw new AuthDatabaseError(error.message, {
+        cause: "database query to find user failed",
+        caller: "findUserByEmail",
+      })
     }
     throw error
   }
@@ -104,10 +59,10 @@ export async function findUserByProvider(provider: Provider, providerId: string)
     return { user: result.user, account: { provider: result.provider } }
   } catch (error) {
     if (error instanceof postgres.PostgresError) {
-      throw new AuthDatabaseError(
-        error.message,
-        "database query to findUserByProvider failed"
-      )
+      throw new AuthDatabaseError(error.message, {
+        cause: "database query to find user failed",
+        caller: "findUserByProvider",
+      })
     }
     throw error
   }
@@ -142,10 +97,10 @@ export async function createUserWithPassword(email: string, password: string) {
     })
   } catch (error) {
     if (error instanceof postgres.PostgresError) {
-      throw new AuthDatabaseError(
-        error.message,
-        "database query to createUserWithPassword failed"
-      )
+      throw new AuthDatabaseError(error.message, {
+        cause: "database query to create user failed",
+        caller: "createUserWithPassword",
+      })
     }
     throw error
   }
@@ -183,10 +138,10 @@ export async function createUserWithProvider(
     })
   } catch (error) {
     if (error instanceof postgres.PostgresError) {
-      throw new AuthDatabaseError(
-        error.message,
-        "database query to createUserWithAccount failed"
-      )
+      throw new AuthDatabaseError(error.message, {
+        cause: "database query to create user failed",
+        caller: "createUserWithAccount",
+      })
     }
     throw error
   }
@@ -212,8 +167,11 @@ export async function deleteUserByEmail(email: string) {
 
       if (userAccount != null) {
         throw new AuthDatabaseError(
-          `account for user with id ${deletedUser.deletedId} should have been deleted`,
-          "database query to deleteUserByEmail failed to delete user account"
+          `account for user with id ${deletedUser.deletedId} not deleted`,
+          {
+            cause: "database query failed to delete user account",
+            caller: "deleteUserByEmail",
+          }
         )
       }
 
@@ -224,8 +182,11 @@ export async function deleteUserByEmail(email: string) {
 
       if (userPassword != null) {
         throw new AuthDatabaseError(
-          `password for user with id ${deletedUser.deletedId} should have been deleted`,
-          "database query to deleteUserByEmail failed to delete user password"
+          `password for user with id ${deletedUser.deletedId} not deleted`,
+          {
+            cause: "database query failed to delete user password",
+            caller: "deleteUserByEmail",
+          }
         )
       }
 
@@ -233,10 +194,10 @@ export async function deleteUserByEmail(email: string) {
     })
   } catch (error) {
     if (error instanceof postgres.PostgresError) {
-      throw new AuthDatabaseError(
-        error.message,
-        "database query to deleteUserByEmail failed"
-      )
+      throw new AuthDatabaseError(error.message, {
+        cause: "database query to delete user failed",
+        caller: "deleteUserByEmail",
+      })
     }
     throw error
   }

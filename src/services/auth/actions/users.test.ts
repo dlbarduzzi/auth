@@ -8,7 +8,6 @@ import {
   findUserByProvider,
   createUserWithPassword,
   createUserWithProvider,
-  findUserByEmailWithPassword,
 } from "./users"
 
 describe("users credentials", () => {
@@ -36,11 +35,12 @@ describe("users credentials", () => {
 
     expect(user).toHaveProperty("id")
     expect(user).toHaveProperty("email")
-    expect(user).not.toHaveProperty("password")
+    expect(user).toHaveProperty("password")
+    expect(user.password).not.toHaveProperty("passwordHash")
   })
 
   it("should find user by email with password hash", async () => {
-    const user = await findUserByEmailWithPassword(userEmail)
+    const user = await findUserByEmail(userEmail, true)
 
     if (user == null) {
       throw new Error(`expected user with email ${userEmail} to be defined`)
