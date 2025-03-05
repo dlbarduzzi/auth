@@ -1,5 +1,5 @@
 {
-  "id": "78af28da-666b-4f74-b9c7-aea09d9f41c2",
+  "id": "6594953d-6009-45d3-bf08-f1489a9da833",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -190,9 +190,9 @@
           "name": "email_index",
           "columns": [
             {
-              "expression": "lower(\"email\")",
+              "expression": "email",
+              "isExpression": false,
               "asc": true,
-              "isExpression": true,
               "nulls": "last"
             }
           ],
