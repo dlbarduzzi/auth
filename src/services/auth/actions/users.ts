@@ -19,13 +19,13 @@ export async function findUserByEmail(email: string, withPassword: boolean = fal
   try {
     return await db.query.users.findFirst({
       where: eq(users.email, lowercase(email)),
-      columns: { id: true, email: true },
+      columns: { id: true, email: true, imageUrl: true, isEmailVerified: true },
       with: {
         account: {
           columns: { provider: true, providerId: true },
         },
         password: {
-          columns: { userId: true, passwordHash: withPassword },
+          columns: { id: true, passwordHash: withPassword },
         },
       },
     })
@@ -40,28 +40,57 @@ export async function findUserByEmail(email: string, withPassword: boolean = fal
   }
 }
 
-export async function findUserByProvider(provider: Provider, providerId: string) {
+export async function findAccountByProvider(provider: Provider, providerId: string) {
   try {
-    const result = await db.query.accounts.findFirst({
+    return await db.query.accounts.findFirst({
       where: and(eq(accounts.provider, provider), eq(accounts.providerId, providerId)),
-      columns: { provider: true },
-      with: {
-        user: {
-          columns: { id: true, email: true },
-        },
-      },
     })
-
-    if (result == null) {
-      return result
-    }
-
-    return { user: result.user, account: { provider: result.provider } }
   } catch (error) {
     if (error instanceof postgres.PostgresError) {
       throw new AuthDatabaseError(error.message, {
-        cause: "database query to find user failed",
-        caller: "findUserByProvider",
+        cause: "database query to find account failed",
+        caller: "findAccountByProvider",
+      })
+    }
+    throw error
+  }
+}
+
+export async function createUserWithProvider(
+  email: string,
+  imageUrl: string,
+  provider: Provider,
+  providerId: string
+) {
+  try {
+    return await db.transaction(async tx => {
+      const [newUser] = await tx
+        .insert(users)
+        .values({ email: lowercase(email), imageUrl })
+        .returning()
+
+      if (newUser == null) {
+        tx.rollback()
+        return
+      }
+
+      const [newAccount] = await tx
+        .insert(accounts)
+        .values({ userId: newUser.id, provider, providerId })
+        .returning()
+
+      if (newAccount == null) {
+        tx.rollback()
+        return
+      }
+
+      return { user: newUser, account: newAccount }
+    })
+  } catch (error) {
+    if (error instanceof postgres.PostgresError) {
+      throw new AuthDatabaseError(error.message, {
+        cause: "database query to create user failed",
+        caller: "createUserWithAccount",
       })
     }
     throw error
@@ -100,47 +129,6 @@ export async function createUserWithPassword(email: string, password: string) {
       throw new AuthDatabaseError(error.message, {
         cause: "database query to create user failed",
         caller: "createUserWithPassword",
-      })
-    }
-    throw error
-  }
-}
-
-export async function createUserWithProvider(
-  email: string,
-  imageUrl: string,
-  provider: Provider,
-  providerId: string
-) {
-  try {
-    return await db.transaction(async tx => {
-      const [newUser] = await tx
-        .insert(users)
-        .values({ email: lowercase(email), imageUrl })
-        .returning({ id: users.id, email: users.email })
-
-      if (newUser == null) {
-        tx.rollback()
-        return
-      }
-
-      const [newAccount] = await tx
-        .insert(accounts)
-        .values({ userId: newUser.id, provider, providerId })
-        .returning({ userId: accounts.userId, provider: accounts.provider })
-
-      if (newAccount == null) {
-        tx.rollback()
-        return
-      }
-
-      return { user: newUser, account: newAccount }
-    })
-  } catch (error) {
-    if (error instanceof postgres.PostgresError) {
-      throw new AuthDatabaseError(error.message, {
-        cause: "database query to create user failed",
-        caller: "createUserWithAccount",
       })
     }
     throw error

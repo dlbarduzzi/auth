@@ -5,80 +5,22 @@ import { lowercase } from "@/lib/utils"
 import {
   findUserByEmail,
   deleteUserByEmail,
-  findUserByProvider,
+  findAccountByProvider,
   createUserWithPassword,
   createUserWithProvider,
 } from "./users"
 
-describe("users credentials", () => {
-  const userEmail = "user.credential@test.com"
-  const userPassword = "password"
-
-  it("should create user with password", async () => {
-    const user = await createUserWithPassword(userEmail, userPassword)
-
-    if (user == null) {
-      throw new Error(`expected created user with email ${userEmail} to be defined`)
-    }
-
-    expect(user).toHaveProperty("id")
-    expect(user).toHaveProperty("email")
-    expect(user.email).toBe(lowercase(userEmail))
-  })
-
-  it("should find user by email without password hash", async () => {
-    const user = await findUserByEmail(userEmail)
-
-    if (user == null) {
-      throw new Error(`expected user with email ${userEmail} to be defined`)
-    }
-
-    expect(user).toHaveProperty("id")
-    expect(user).toHaveProperty("email")
-    expect(user).toHaveProperty("password")
-    expect(user.password).not.toHaveProperty("passwordHash")
-  })
-
-  it("should find user by email with password hash", async () => {
-    const user = await findUserByEmail(userEmail, true)
-
-    if (user == null) {
-      throw new Error(`expected user with email ${userEmail} to be defined`)
-    }
-
-    expect(user).toHaveProperty("id")
-    expect(user).toHaveProperty("email")
-    expect(user).toHaveProperty("password")
-    expect(user.password).toHaveProperty("passwordHash")
-  })
-
-  it("should delete user by email", async () => {
-    const user = await deleteUserByEmail(userEmail)
-
-    if (user == null) {
-      throw new Error(`expected deleted user with email ${userEmail} to be defined`)
-    }
-
-    expect(user).toHaveProperty("deletedId")
-  })
-})
-
-describe("users accounts", () => {
-  const userEmail = "user.account@test.com"
-  const userImageUrl = "https://placeholder.com"
-  const userProvider = "github"
-  const userProviderId = "gh_ABC"
+describe("users with provider", () => {
+  const email = "users.username@test.com"
+  const imageUrl = "https://placeholder.com"
+  const provider = "github"
+  const providerId = "users_gh_ABC"
 
   it("should create user with provider", async () => {
-    const result = await createUserWithProvider(
-      userEmail,
-      userImageUrl,
-      userProvider,
-      userProviderId
-    )
+    const result = await createUserWithProvider(email, imageUrl, provider, providerId)
 
     if (result == null) {
-      throw new Error(`expected result for user with email ${userEmail} to be defined`)
+      throw new Error(`expected result for user with email ${email} to be defined`)
     }
 
     expect(result).toHaveProperty("user")
@@ -94,28 +36,75 @@ describe("users accounts", () => {
   })
 
   it("should find user by provider", async () => {
-    const result = await findUserByProvider(userProvider, userProviderId)
+    const account = await findAccountByProvider(provider, providerId)
 
-    if (result == null) {
-      throw new Error(`expected result for user with email ${userEmail} to be defined`)
+    if (account == null) {
+      throw new Error(`expected account for user with email ${email} to be defined`)
     }
 
-    expect(result).toHaveProperty("user")
-    expect(result).toHaveProperty("account")
-
-    const { user, account } = result
-
-    expect(user).toHaveProperty("id")
-    expect(user).toHaveProperty("email")
+    expect(account).toHaveProperty("userId")
     expect(account).toHaveProperty("provider")
-    expect(account.provider).toEqual(userProvider)
+    expect(account.provider).toEqual(provider)
   })
 
   it("should delete user by email", async () => {
-    const user = await deleteUserByEmail(userEmail)
+    const user = await deleteUserByEmail(email)
 
     if (user == null) {
-      throw new Error(`expected deleted user with email ${userEmail} to be defined`)
+      throw new Error(`expected deleted user with email ${email} to be defined`)
+    }
+
+    expect(user).toHaveProperty("deletedId")
+  })
+})
+
+describe("users with password", () => {
+  const email = "users.username@test.com"
+  const password = "password"
+
+  it("should create user with password", async () => {
+    const user = await createUserWithPassword(email, password)
+
+    if (user == null) {
+      throw new Error(`expected created user with email ${email} to be defined`)
+    }
+
+    expect(user).toHaveProperty("id")
+    expect(user).toHaveProperty("email")
+    expect(user.email).toBe(lowercase(email))
+  })
+
+  it("should find user by email without password hash", async () => {
+    const user = await findUserByEmail(email)
+
+    if (user == null) {
+      throw new Error(`expected user with email ${email} to be defined`)
+    }
+
+    expect(user).toHaveProperty("id")
+    expect(user).toHaveProperty("email")
+    expect(user).toHaveProperty("password")
+    expect(user.password).not.toHaveProperty("passwordHash")
+  })
+
+  it("should find user by email with password hash", async () => {
+    const user = await findUserByEmail(email, true)
+
+    if (user == null) {
+      throw new Error(`expected user with email ${email} to be defined`)
+    }
+
+    expect(user).toHaveProperty("id")
+    expect(user).toHaveProperty("email")
+    expect(user).toHaveProperty("password")
+    expect(user.password).toHaveProperty("passwordHash")
+  })
+
+  it("should delete user by email", async () => {
+    const user = await deleteUserByEmail(email)
+
+    if (user == null) {
+      throw new Error(`expected deleted user with email ${email} to be defined`)
     }
 
     expect(user).toHaveProperty("deletedId")
