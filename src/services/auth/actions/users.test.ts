@@ -11,7 +11,7 @@ import {
 } from "./users"
 
 describe("users credentials", () => {
-  const userEmail = "username@test.com"
+  const userEmail = "user.credential@test.com"
   const userPassword = "password"
 
   it("should create user with password", async () => {
@@ -64,7 +64,7 @@ describe("users credentials", () => {
 })
 
 describe("users accounts", () => {
-  const userEmail = "username@test.com"
+  const userEmail = "user.account@test.com"
   const userImageUrl = "https://placeholder.com"
   const userProvider = "github"
   const userProviderId = "gh_ABC"

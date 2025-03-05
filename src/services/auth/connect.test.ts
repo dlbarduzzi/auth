@@ -6,7 +6,7 @@ import { connectUserAccount } from "./connect"
 import { deleteUserByEmail } from "./actions/users"
 
 describe("connect account", () => {
-  const userEmail = "username@test.com"
+  const userEmail = "user.provider@test.com"
   const userImageUrl = "https://placeholder.com"
   const userProvider = "github"
   const userProviderId = "gh_ABC"
