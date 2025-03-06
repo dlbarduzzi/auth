@@ -5,7 +5,7 @@ import { generateRandomString } from "./random"
 describe("generateRandomString", () => {
   it("generates a random string for a given length", () => {
     const length = 12
-    const result = generateRandomString(length)
+    const result = generateRandomString(length, "a-z", "A-Z", "0-9")
     expect(result).toBeDefined()
     expect(result).toHaveLength(length)
   })
@@ -13,5 +13,11 @@ describe("generateRandomString", () => {
   it("throws an error when length is less than 1", () => {
     expect(() => generateRandomString(0)).toThrowError("length must be 1 or higher")
     expect(() => generateRandomString(-6)).toThrowError("length must be 1 or higher")
+  })
+
+  it("throws an error when invalid option is provided", () => {
+    expect(() => generateRandomString(8)).toThrowError(
+      "no valid options provided for alphabet"
+    )
   })
 })
