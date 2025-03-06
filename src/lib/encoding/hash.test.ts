@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest"
 
-import { createSHA256Hash } from "./hash"
+import { createHashSHA256Hex } from "./hash"
 
-describe("createSHA256Hash", () => {
+describe("createHashSHA256Hex", () => {
   const input = "Hello, world!"
-  const buffer = new TextEncoder().encode(input)
   it("computes SHA-256 in raw format", async () => {
-    const result = await createSHA256Hash(buffer)
+    const result = await createHashSHA256Hex(input)
     expect(typeof result).toBe("string")
   })
 })

@@ -1,3 +1,4 @@
 export async function GET() {
-  return new Response("GitHub sign up!", { status: 200 })
+  const authUrl = "/api/oauth/github/callback"
+  return new Response(null, { status: 302, headers: { location: authUrl } })
 }

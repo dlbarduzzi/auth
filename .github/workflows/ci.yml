@@ -16,9 +16,6 @@ jobs:
       DB_NAME: "test_db"
       DB_USER: "username"
       DB_PASS: "password"
-      DATABASE_URL: "postgresql://username:password@localhost:5432/test_db"
-      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
-      SKIP_ENV_VALIDATIONS: "true"
 
     steps:
       - name: Checkout
@@ -39,9 +36,11 @@ jobs:
         run: npm run lint
       
       - name: Build
+        run: npm run build
         env:
           NODE_ENV: "production"
-        run: npm run build
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+          SKIP_ENV_VALIDATIONS: "true"
 
       - name: Start docker containers          
         run: |
@@ -51,6 +50,9 @@ jobs:
 
       - name: Setup database          
         run: npm run db:migrate
+        env:
+          DATABASE_URL: "postgresql://username:password@localhost:5432/test_db"
+          SKIP_ENV_VALIDATIONS: "true"
 
       - name: Test
         run: npm run test

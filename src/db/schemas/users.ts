@@ -11,6 +11,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core"
 
+import { sessions } from "./sessions"
 import { accounts } from "./accounts"
 import { passwords } from "./passwords"
 
@@ -33,6 +34,7 @@ export const users = pgTable(
 )
 
 export const userRelations = relations(users, ({ one }) => ({
+  session: one(sessions),
   account: one(accounts),
   password: one(passwords),
 }))
