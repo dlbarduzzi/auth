@@ -2,11 +2,7 @@ import NextLink from "next/link"
 
 import { Button } from "@/components/ui/button"
 
-import { getSession } from "@/services/auth/actions/sessions"
-
 export default async function Page() {
-  const session = await getSession()
-  console.log({ session })
   return (
     <div>
       <section aria-labelledby="homepage-header">
