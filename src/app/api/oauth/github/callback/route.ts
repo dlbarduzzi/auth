@@ -10,6 +10,7 @@ export async function GET() {
       ? "26f0d41b-17cb-4673-935a-802ad6d4fda8"
       : "cc8c2f6c-54f6-4f37-8518-f2c9f5b8e3f7"
   try {
+    // TODO: Investigate why 2 sessions are being created in database.
     const session = await createSession(token, userId)
     await createSessionCookie(token, session.expiresAt)
     console.log(`Cookie session created with session id ${session.id}`)

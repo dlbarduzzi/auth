@@ -61,15 +61,12 @@ export async function getSession() {
 export async function createSession(token: string, userId: string) {
   try {
     const sessionId = await createHashSHA256Hex(token)
+    const expiresAt = new Date(Date.now() + SESSION_EXPIRE_TIME)
 
     const session = await db.transaction(async tx => {
       const [result] = await tx
         .insert(sessions)
-        .values({
-          userId,
-          sessionId,
-          expiresAt: new Date(Date.now() + SESSION_EXPIRE_TIME),
-        })
+        .values({ userId, sessionId, expiresAt })
         .returning()
 
       if (result == null) {
