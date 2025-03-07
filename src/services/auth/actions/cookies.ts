@@ -51,3 +51,14 @@ export async function deleteSessionCookie() {
     sameSite: "lax",
   })
 }
+
+export async function createOAuthCookie(name: string, value: string) {
+  const cookieStore = await cookies()
+  cookieStore.set(name, value, {
+    path: "/",
+    secure: env.NODE_ENV === "production",
+    maxAge: 60 * 10, // 10 minutes,
+    httpOnly: true,
+    sameSite: "lax",
+  })
+}

@@ -1,6 +1,14 @@
+import { redirect } from "next/navigation"
+
 import { SignUpForm } from "@/components/signup-form"
 
-export default function Page() {
+import { getSession } from "@/services/auth/actions/sessions"
+
+export default async function Page() {
+  const session = await getSession()
+  if (session != null) {
+    return redirect("/profile")
+  }
   return (
     <div>
       <section aria-labelledby="signup-header">
