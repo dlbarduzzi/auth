@@ -12,3 +12,8 @@ export async function generateCodeChallenge(value: string) {
   const buffer = await subtle.digest("SHA-256", data)
   return encodeBase64UrlNoPadding(new Uint8Array(buffer))
 }
+
+export function encodeBasicCredentials(username: string, password: string) {
+  const bytes = new TextEncoder().encode(`${username}:${password}`)
+  return btoa(Array.from(bytes, byte => String.fromCodePoint(byte)).join(""))
+}

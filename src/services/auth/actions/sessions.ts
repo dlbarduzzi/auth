@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm"
 
 import { db } from "@/db/conn"
 import { sessions } from "@/db/schemas/sessions"
-import { DatabaseError } from "@/services/auth/error"
+import { AppDatabaseError } from "@/lib/error"
 import { createHashSHA256Hex } from "@/lib/encoding/hash"
 
 import { getSessionCookie } from "./cookies"
@@ -47,11 +47,22 @@ export async function getSession() {
         .returning({ id: sessions.id })
 
       if (result == null) {
-        throw new DatabaseError(`db failed to update session with id ${session.id}`)
+        throw new AppDatabaseError(`db failed to update session with id ${session.id}`)
       }
     } catch (error) {
       const details = `[Exception]: db failed to update session with id ${session.id}`
-      logError(error, details)
+      switch (true) {
+        case error instanceof AppDatabaseError:
+          console.error(error)
+          break
+        case error instanceof postgres.PostgresError:
+          console.error(`[PostgresError]: ${error.message}`)
+          console.error(details)
+          break
+        default:
+          console.error(error)
+          console.error(details)
+      }
     }
   }
 
@@ -80,7 +91,7 @@ export async function createSession(token: string, userId: string) {
   } catch (error) {
     if (error instanceof postgres.PostgresError) {
       // Prevent leaking sensitive data.
-      throw new DatabaseError(error.message)
+      throw new AppDatabaseError(error.message)
     }
     throw error
   }
@@ -94,25 +105,21 @@ export async function deleteSession(sessionId: string) {
       .returning({ id: sessions.id })
 
     if (result == null) {
-      throw new DatabaseError(`db failed to delete session with id ${sessionId}`)
+      throw new AppDatabaseError(`db failed to delete session with id ${sessionId}`)
     }
   } catch (error) {
     const details = `[Exception]: db failed to delete session with id ${sessionId}`
-    logError(error, details)
-  }
-}
-
-function logError(error: unknown, details: string) {
-  switch (true) {
-    case error instanceof DatabaseError:
-      console.error(error)
-      break
-    case error instanceof postgres.PostgresError:
-      console.error(`[PostgresError]: ${error.message}`)
-      console.error(details)
-      break
-    default:
-      console.error(error)
-      console.error(details)
+    switch (true) {
+      case error instanceof AppDatabaseError:
+        console.error(error)
+        break
+      case error instanceof postgres.PostgresError:
+        console.error(`[PostgresError]: ${error.message}`)
+        console.error(details)
+        break
+      default:
+        console.error(error)
+        console.error(details)
+    }
   }
 }

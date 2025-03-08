@@ -1,29 +1,48 @@
-import { env } from "@/env/server"
-import { generateId } from "@/services/auth/utils"
-import { createSessionCookie } from "@/services/auth/actions/cookies"
-import { getSession, createSession } from "@/services/auth/actions/sessions"
+import type { OAuthError } from "@/services/auth/vars"
 
-export async function GET() {
-  if (1 > 0) {
-    return new Response("GitHub Callback", { status: 200 })
-  }
-  const session = await getSession()
-  if (session != null) {
-    return new Response(null, { status: 302, headers: { location: "/profile" } })
-  }
-  const token = generateId(32)
-  const userId =
-    env.NODE_ENV === "production"
-      ? "26f0d41b-17cb-4673-935a-802ad6d4fda8"
-      : "cc8c2f6c-54f6-4f37-8518-f2c9f5b8e3f7"
+import { cookies } from "next/headers"
+
+import { github } from "@/services/auth/client"
+import { COOKIE_NAMES } from "@/services/auth/vars"
+import { redirectOnError } from "@/services/auth/request"
+
+export async function GET(request: Request) {
   try {
-    const session = await createSession(token, userId)
-    await createSessionCookie(token, session.expiresAt)
-    console.log(`Cookie session created with session id ${session.id}`)
+    const url = new URL(request.url)
+
+    const { code, error } = await getCodeParameter(url)
+    if (error != null) {
+      return redirectOnError(error, "github")
+    }
+
+    const token = await github.validateAuthorizationCode(code)
+    const githubUser = await github.getUserInformation(token)
+
+    return new Response(`GitHub user: ${githubUser.name}`, { status: 200 })
   } catch (error) {
-    console.log(error)
-    console.log("[GitHubCallbackError]: internal server error")
-    return new Response("GitHub callback ERROR!", { status: 500 })
+    console.error(error)
+    return redirectOnError("InternalServerError", "github")
   }
-  return new Response(null, { status: 302, headers: { Location: "/profile" } })
+}
+
+type CodeParameter = { code: string; error: null } | { code: null; error: OAuthError }
+
+async function getCodeParameter(url: URL): Promise<CodeParameter> {
+  const code = url.searchParams.get("code")
+  if (code == null) {
+    return { code: null, error: "CodeNotFound" }
+  }
+  const state = url.searchParams.get("state")
+  if (state == null) {
+    return { code: null, error: "StateNotFound" }
+  }
+  const cookieStore = await cookies()
+  const storedState = cookieStore.get(COOKIE_NAMES.GITHUB_STATE)?.value ?? null
+  if (storedState == null) {
+    return { code: null, error: "StoredStateNotFound" }
+  }
+  if (state !== storedState) {
+    return { code: null, error: "StatesNotMatched" }
+  }
+  return { code, error: null }
 }
