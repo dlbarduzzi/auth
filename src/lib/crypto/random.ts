@@ -1,5 +1,3 @@
-import crypto from "crypto"
-
 type AlphabetOption = "a-z" | "A-Z" | "0-9" | "-_"
 
 function getAlphabet(option: AlphabetOption): string {

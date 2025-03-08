@@ -1,17 +1,21 @@
-"use client"
-
 import NextLink from "next/link"
 
-import { useSearchParams } from "next/navigation"
+import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 
-export default function Page() {
-  const searchParams = useSearchParams()
+const searchParamsSchema = z.object({
+  error: z.string().default("undefined"),
+  provider: z.string().default("undefined"),
+})
 
-  const error = searchParams.get("error") ?? "undefined"
-  const provider = searchParams.get("provider") ?? "undefined"
+type PageProps = {
+  readonly searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
 
+export default async function Page({ searchParams }: PageProps) {
+  const params = await searchParams
+  const { error, provider } = searchParamsSchema.parse(params)
   return (
     <div className="p-4">
       <div className="border border-gray-200 bg-gray-100 px-4 py-3">
