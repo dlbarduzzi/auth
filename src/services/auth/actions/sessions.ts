@@ -5,9 +5,10 @@ import postgres from "postgres"
 import { eq } from "drizzle-orm"
 
 import { db } from "@/db/conn"
+import { env } from "@/env/server"
 import { sessions } from "@/db/schemas/sessions"
 import { AppDatabaseError } from "@/lib/error"
-import { createHashSHA256Hex } from "@/lib/encoding/hash"
+import { createHmacSHA256Hash } from "@/lib/encoding/hash"
 
 import { getSessionCookie } from "./cookies"
 
@@ -20,7 +21,7 @@ export async function getSession() {
     return null
   }
 
-  const sessionId = await createHashSHA256Hex(token)
+  const sessionId = await createHmacSHA256Hash(env.AUTH_SECRET, token)
 
   const session = await db.query.sessions.findFirst({
     where: eq(sessions.sessionId, sessionId),
@@ -71,7 +72,7 @@ export async function getSession() {
 
 export async function createSession(token: string, userId: string) {
   try {
-    const sessionId = await createHashSHA256Hex(token)
+    const sessionId = await createHmacSHA256Hash(env.AUTH_SECRET, token)
     const expiresAt = new Date(Date.now() + SESSION_EXPIRE_TIME)
 
     const session = await db.transaction(async tx => {
