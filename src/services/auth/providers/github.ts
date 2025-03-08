@@ -49,7 +49,9 @@ export class GitHub {
   }
 
   public async getUserInformation(token: string) {
-    return await sendUserInformation(token)
+    const request = new Request("https://api.github.com/user")
+    request.headers.set("Authorization", `Bearer ${token}`)
+    return await sendUserInformation(request)
   }
 }
 
@@ -92,9 +94,7 @@ async function sendCodeValidation(request: Request) {
   return token.data.access_token
 }
 
-async function sendUserInformation(token: string) {
-  const request = new Request("https://api.github.com/user")
-  request.headers.set("Authorization", `Bearer ${token}`)
+async function sendUserInformation(request: Request) {
   let response: Response
   try {
     response = await fetch(request)
