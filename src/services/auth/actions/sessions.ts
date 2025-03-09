@@ -6,8 +6,8 @@ import { eq } from "drizzle-orm"
 
 import { db } from "@/db/conn"
 import { env } from "@/env/server"
-import { hmacSign } from "@/lib/encoding/hmac"
 import { sessions } from "@/db/schemas/sessions"
+import { hmacSignSHA256 } from "@/tools/hmac"
 import { AppDatabaseError } from "@/lib/error"
 
 import { getSessionCookie } from "./cookies"
@@ -15,22 +15,13 @@ import { getSessionCookie } from "./cookies"
 const SESSION_RENEW_TIME = 1000 * 60 * 60 * 24 * 3
 const SESSION_EXPIRE_TIME = 1000 * 60 * 60 * 24 * 7
 
-async function createSessionId(token: string): Promise<string> {
-  const sessionId = await hmacSign(env.AUTH_SECRET, token, "hex")
-  if (typeof sessionId !== "string") {
-    throw new Error("Invalid session id type")
-  }
-  return sessionId
-}
-
 export async function getSession() {
   const token = await getSessionCookie()
   if (token == null) {
     return null
   }
 
-  const sessionId = await createSessionId(token)
-  console.log({ sessionId })
+  const sessionId = await hmacSignSHA256(env.AUTH_SECRET, token)
 
   const session = await db.query.sessions.findFirst({
     where: eq(sessions.sessionId, sessionId),
@@ -81,7 +72,7 @@ export async function getSession() {
 
 export async function createSession(token: string, userId: string) {
   try {
-    const sessionId = await createSessionId(token)
+    const sessionId = await hmacSignSHA256(env.AUTH_SECRET, token)
     const expiresAt = new Date(Date.now() + SESSION_EXPIRE_TIME)
 
     const session = await db.transaction(async tx => {

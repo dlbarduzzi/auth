@@ -1,7 +1,7 @@
 import { subtle } from "uncrypto"
 
-import { generateRandomString } from "@/lib/crypto/random"
-import { encodeBase64, encodeBase64url } from "@/lib/encoding/base64"
+import { generateRandomString } from "@/tools/random"
+import { encodeBase64, encodeBase64url } from "@/tools/base64"
 
 export function generateId(length: number = 32) {
   return generateRandomString(length, "a-z", "A-Z", "0-9")
