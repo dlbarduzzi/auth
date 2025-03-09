@@ -1,4 +1,4 @@
-export function encodeHex(data: ArrayBuffer) {
+export function encodeHex(data: ArrayBuffer | Uint8Array) {
   if (data.byteLength === 0) {
     return ""
   }

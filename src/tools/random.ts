@@ -1,6 +1,6 @@
 import { getRandomValues } from "uncrypto"
 
-type Alphabet = "a-z" | "A-Z" | "0-9" | "-_"
+export type Alphabet = "a-z" | "A-Z" | "0-9" | "-_"
 
 function expandAlphabet(alphabet: Alphabet): string {
   switch (alphabet) {
