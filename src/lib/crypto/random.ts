@@ -1,7 +1,9 @@
-type AlphabetOption = "a-z" | "A-Z" | "0-9" | "-_"
+import { getRandomValues } from "uncrypto"
 
-function getAlphabet(option: AlphabetOption): string {
-  switch (option) {
+type Alphabet = "a-z" | "A-Z" | "0-9" | "-_"
+
+function expandAlphabet(alphabet: Alphabet): string {
+  switch (alphabet) {
     case "a-z":
       return "abcdefghijklmnopqrstuvwxyz"
     case "A-Z":
@@ -11,29 +13,26 @@ function getAlphabet(option: AlphabetOption): string {
     case "-_":
       return "-_"
     default:
-      throw new Error(`unsupported alphabet option: ${option}`)
+      throw new Error(`Unsupported alphabet: ${alphabet}`)
   }
 }
 
-export function generateRandomString<O extends AlphabetOption>(
-  length: number,
-  ...options: O[]
-) {
+export function generateRandomString(length: number, ...characters: Alphabet[]) {
   if (length < 1) {
-    throw new Error("length must be 1 or higher")
+    throw new Error("Length must be 1 or higher")
   }
 
-  const alphabet = options.map(getAlphabet).join("")
+  const alphabet = characters.map(expandAlphabet).join("")
   if (alphabet.length < 1) {
-    throw new Error("no valid options provided for alphabet")
+    throw new Error("No valid characters provided for alphabet")
   }
 
   const randomValues = new Uint8Array(length)
-  crypto.getRandomValues(randomValues)
+  getRandomValues(randomValues)
 
-  let result = ""
   const alphabetLength = alphabet.length
 
+  let result = ""
   for (let i = 0; i < length; i++) {
     const index = randomValues[i]! % alphabetLength
     result += alphabet[index]

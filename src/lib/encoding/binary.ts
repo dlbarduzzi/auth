@@ -1,7 +1,12 @@
 type Encoding = "utf-8" | "utf-16" | "iso-8859-1"
 type BinaryData = ArrayBuffer | ArrayBufferView
 
+const encoder = new TextEncoder()
 const decoders = new Map<Encoding, TextDecoder>()
+
+export function encodeBinary() {
+  return encoder.encode
+}
 
 export function decodeBinary(data: BinaryData, encoding: Encoding = "utf-8") {
   if (!decoders.has(encoding)) {
