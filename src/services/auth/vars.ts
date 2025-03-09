@@ -3,7 +3,7 @@ export const COOKIE_NAMES = {
   SESSION_TOKEN: "session_token",
   GITHUB_STATE: "github_oauth_state",
   GOOGLE_STATE: "google_oauth_state",
-  GOOGLE_CODE_VERIFIER: "github_oauth_code_verifier",
+  GOOGLE_CODE_VERIFIER: "google_oauth_code_verifier",
 }
 
 export const OAUTH_ERRORS = {
