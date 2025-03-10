@@ -1,5 +1,4 @@
-import type { Provider } from "@/db/schemas/accounts"
-import type { OAuthError } from "@/services/auth/vars"
+import { FetchRequestError, FetchResponseError } from "@/lib/error"
 
 export function createOAuthRequest(url: string, body: URLSearchParams) {
   const request = new Request(url, {
@@ -12,9 +11,24 @@ export function createOAuthRequest(url: string, body: URLSearchParams) {
   return request
 }
 
-export function redirectOnError(error: OAuthError, provider: Provider) {
-  return new Response(null, {
-    status: 302,
-    headers: { Location: `/auth/error?error=${error}&provider=${provider}` },
-  })
+export async function sendRequest(request: Request) {
+  let response: Response
+  try {
+    response = await fetch(request)
+  } catch (e) {
+    throw new FetchRequestError(e)
+  }
+  if (response.status !== 200) {
+    throw new FetchResponseError({
+      cause: response.statusText,
+      status: response.status,
+    })
+  }
+  let data: unknown
+  try {
+    data = await response.json()
+  } catch (e) {
+    throw new FetchResponseError({ cause: e, status: response.status })
+  }
+  return data
 }

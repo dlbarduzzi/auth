@@ -1,21 +1,17 @@
-import type { OAuthError } from "@/services/auth/vars"
-
 import { cookies } from "next/headers"
 
 import { google } from "@/services/auth/client"
 import { COOKIE_NAMES } from "@/services/auth/vars"
-import { redirectOnError } from "@/services/auth/request"
+import { redirectOnError } from "@/services/auth/utils"
+import { OAuthRequestError } from "@/services/auth/error"
 
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
+    const code = await getCodeParameter(url)
+    const codeVerifier = await getCodeVerifierParameter()
 
-    const data = await getCodesParameters(url)
-    if (!data.ok) {
-      return redirectOnError(data.error, "google")
-    }
-
-    const tokens = await google.validateAuthorizationCode(data.code, data.codeVerifier)
+    const tokens = await google.validateAuthorizationCode(code, codeVerifier)
     const googleUser = google.getUserInformation(tokens.idToken)
 
     return Response.json(
@@ -23,35 +19,39 @@ export async function GET(request: Request) {
       { status: 200 }
     )
   } catch (error) {
+    if (error instanceof OAuthRequestError) {
+      return redirectOnError(error.cause, "google")
+    }
     console.error(error)
     return redirectOnError("InternalServerError", "google")
   }
 }
 
-type CodeParameter =
-  | { ok: false; error: OAuthError }
-  | { ok: true; code: string; codeVerifier: string }
-
-async function getCodesParameters(url: URL): Promise<CodeParameter> {
+async function getCodeParameter(url: URL) {
   const code = url.searchParams.get("code")
   if (code == null) {
-    return { ok: false, error: "CodeNotFound" }
+    throw new OAuthRequestError("CodeNotFound")
   }
   const state = url.searchParams.get("state")
   if (state == null) {
-    return { ok: false, error: "StateNotFound" }
+    throw new OAuthRequestError("StateNotFound")
   }
   const cookieStore = await cookies()
   const storedState = cookieStore.get(COOKIE_NAMES.GOOGLE_STATE)?.value ?? null
   if (storedState == null) {
-    return { ok: false, error: "StoredStateNotFound" }
+    throw new OAuthRequestError("StoredStateNotFound")
   }
   if (state !== storedState) {
-    return { ok: false, error: "StatesNotMatched" }
+    throw new OAuthRequestError("StatesNotMatched")
   }
+  return code
+}
+
+async function getCodeVerifierParameter() {
+  const cookieStore = await cookies()
   const codeVerifier = cookieStore.get(COOKIE_NAMES.GOOGLE_CODE_VERIFIER)?.value ?? null
   if (codeVerifier == null) {
-    return { ok: false, error: "CodeVerifierNotFound" }
+    throw new OAuthRequestError("CodeVerifierNotFound")
   }
-  return { ok: true, code, codeVerifier }
+  return codeVerifier
 }

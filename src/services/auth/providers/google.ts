@@ -1,16 +1,9 @@
 import { z } from "zod"
 import { decodeJwt } from "jose"
 
-import { simplifyZodError } from "@/lib/error/zod"
-import { createOAuthRequest } from "@/services/auth/request"
+import { sendRequest, createOAuthRequest } from "@/services/auth/request"
+import { stringifyZodError, FetchResponseError } from "@/lib/error"
 import { generateCodeChallenge, encodeBasicCredentials } from "@/services/auth/utils"
-
-import {
-  AppFetchError,
-  AppResponseError,
-  AppOAuthRequestError,
-  AppResponseBodyError,
-} from "@/lib/error"
 
 const scopes = ["email", "openid", "profile"]
 
@@ -59,28 +52,17 @@ export class Google {
 }
 
 async function sendCodeValidation(request: Request) {
-  let response: Response
-  try {
-    response = await fetch(request)
-  } catch (e) {
-    throw new AppFetchError(e)
-  }
-  if (response.status !== 200) {
-    throw new AppResponseError(response.status, response.statusText)
-  }
-  let data: unknown
-  try {
-    data = await response.json()
-  } catch {
-    throw new AppResponseError(response.status, response.statusText)
-  }
+  const data = await sendRequest(request)
   const errorResponse = z.object({
     error: z.string(),
     error_description: z.string(),
   })
   const error = errorResponse.safeParse(data)
   if (error.success) {
-    throw new AppOAuthRequestError(error.data.error, error.data.error_description)
+    throw new FetchResponseError({
+      cause: error.data.error,
+      details: error.data.error_description,
+    })
   }
   const tokenResponse = z.object({
     scope: z.string(),
@@ -90,10 +72,10 @@ async function sendCodeValidation(request: Request) {
   })
   const token = tokenResponse.safeParse(data)
   if (!token.success) {
-    throw new AppResponseBodyError(
-      "bad token schema response body",
-      simplifyZodError(token.error)
-    )
+    throw new FetchResponseError({
+      cause: "bad token schema response body",
+      details: stringifyZodError(token.error),
+    })
   }
   return { idToken: token.data.id_token, accessToken: token.data.access_token }
 }
@@ -103,7 +85,7 @@ function sendUserInformation(jwt: string) {
   try {
     payload = decodeJwt(jwt)
   } catch (e) {
-    throw new AppResponseBodyError("invalid jwt token", e)
+    throw new Error("invalid jwt token", { cause: e })
   }
   const userResponse = z.object({
     sub: z.string(),
@@ -113,10 +95,10 @@ function sendUserInformation(jwt: string) {
   })
   const user = userResponse.safeParse(payload)
   if (!user.success) {
-    throw new AppResponseBodyError(
-      "bad user schema response body",
-      simplifyZodError(user.error)
-    )
+    throw new FetchResponseError({
+      cause: "bad user schema response body",
+      details: stringifyZodError(user.error),
+    })
   }
   return user.data
 }

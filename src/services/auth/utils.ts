@@ -1,3 +1,6 @@
+import type { Provider } from "@/db/schemas/accounts"
+import type { OAuthError } from "@/services/auth/error"
+
 import { subtle } from "uncrypto"
 
 import { generateRandomString } from "@/tools/random"
@@ -16,4 +19,11 @@ export async function generateCodeChallenge(value: string) {
 export function encodeBasicCredentials(username: string, password: string) {
   const data = new TextEncoder().encode(`${username}:${password}`)
   return encodeBase64(data, true)
+}
+
+export function redirectOnError(error: OAuthError, provider: Provider) {
+  return new Response(null, {
+    status: 302,
+    headers: { Location: `/auth/error?error=${error}&provider=${provider}` },
+  })
 }
