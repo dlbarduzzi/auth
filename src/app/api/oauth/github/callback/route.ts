@@ -11,9 +11,23 @@ export async function GET(request: Request) {
     const code = await getCodeParameter(url)
     const token = await github.validateAuthorizationCode(code)
     const githubUser = await github.getUserInformation(token)
+    const githubUserEmail = await github.getUserEmailInformation(token)
+
+    if (githubUserEmail == null) {
+      return redirectOnError("PrimaryUserEmailNotFound", "github")
+    }
+
+    if (!githubUserEmail.verified) {
+      return redirectOnError("UserEmailNotVerified", "github")
+    }
 
     return Response.json(
-      { id: githubUser.id, name: githubUser.name, provider: "github" },
+      {
+        id: githubUser.id,
+        name: githubUser.name,
+        email: githubUserEmail.email,
+        provider: "github",
+      },
       { status: 200 }
     )
   } catch (error) {

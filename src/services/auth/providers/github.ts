@@ -46,6 +46,12 @@ export class GitHub {
     request.headers.set("Authorization", `Bearer ${token}`)
     return await sendUserInformation(request)
   }
+
+  public async getUserEmailInformation(token: string) {
+    const request = new Request("https://api.github.com/user/emails")
+    request.headers.set("Authorization", `Bearer ${token}`)
+    return await sendUserEmailInformation(request)
+  }
 }
 
 async function sendCodeValidation(request: Request) {
@@ -92,4 +98,26 @@ async function sendUserInformation(request: Request) {
     })
   }
   return user.data
+}
+
+async function sendUserEmailInformation(request: Request) {
+  const data = await sendRequest(request)
+  const emailsResponse = z.array(
+    z.object({
+      email: z.string(),
+      primary: z.boolean(),
+      verified: z.boolean(),
+    })
+  )
+  const emails = emailsResponse.safeParse(data)
+  if (!emails.success) {
+    throw new FetchResponseError({
+      cause: "bad user email schema response body",
+      details: stringifyZodError(emails.error),
+    })
+  }
+  for (const email of emails.data) {
+    if (email.primary) return email
+  }
+  return null
 }

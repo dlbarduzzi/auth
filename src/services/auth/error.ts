@@ -4,6 +4,8 @@ export const OAUTH_ERRORS = {
   STORED_STATE_NOT_FOUND: "StoredStateNotFound",
   STATES_NOT_MATCHED: "StatesNotMatched",
   CODE_VERIFIER_NOT_FOUND: "CodeVerifierNotFound",
+  USER_EMAIL_NOT_VERIFIED: "UserEmailNotVerified",
+  PRIMARY_USER_EMAIL_NOT_FOUND: "PrimaryUserEmailNotFound",
   INTERNAL_SERVER_ERROR: "InternalServerError",
 } as const
 

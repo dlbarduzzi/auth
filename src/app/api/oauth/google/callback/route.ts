@@ -15,7 +15,12 @@ export async function GET(request: Request) {
     const googleUser = google.getUserInformation(tokens.idToken)
 
     return Response.json(
-      { id: googleUser.sub, name: googleUser.name, provider: "google" },
+      {
+        id: googleUser.sub,
+        name: googleUser.name,
+        email: googleUser.email,
+        provider: "google",
+      },
       { status: 200 }
     )
   } catch (error) {
