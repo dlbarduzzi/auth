@@ -34,3 +34,4 @@ lerna-debug.log*
 .local/
 docker-data/
 dist/
+coverage/
