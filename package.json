@@ -3,9 +3,12 @@
   "type": "module",
   "version": "0.1.0",
   "scripts": {
+    "dev": "tsx watch src/serve.ts",
     "build": "tsc",
     "lint": "eslint",
-    "test": "vitest"
+    "test": "vitest",
+    "test:coverage": "vitest --coverage.enabled=true",
+    "test:coverage:html": "vitest run --coverage"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.17.0",
