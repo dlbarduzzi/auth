@@ -1,47 +1,47 @@
-import { cookie } from "./cookie"
 import { describe, expect, it } from "vitest"
+import { getAllCookies, getOneCookie, serializeCookie } from "./cookie"
 
 describe("parse cookie", () => {
   const testCookie = "cookie_one=value-one; cookie_two=value-two"
 
   it("should get all cookies", () => {
-    const result = cookie().getAll(testCookie)
+    const result = getAllCookies(testCookie)
     expect(result.size).toBe(2)
     expect(result.get("cookie_one")).toBe("value-one")
     expect(result.get("cookie_two")).toBe("value-two")
   })
 
   it("should get one cookies", () => {
-    const result = cookie().getOne("cookie_one", testCookie)
+    const result = getOneCookie("cookie_one", testCookie)
     expect(result.size).toBe(1)
     expect(result.get("cookie_one")).toBe("value-one")
   })
 
   it("should get no cookies", () => {
-    const result = cookie().getOne("non_existent", testCookie)
+    const result = getOneCookie("non_existent", testCookie)
     expect(result.size).toBe(0)
     expect(result.get("non_existent")).toBeUndefined()
   })
 
   it("should get no cookies for invalid cookie", () => {
-    const result = cookie().getAll("invalid")
+    const result = getAllCookies("invalid")
     expect(result.size).toBe(0)
   })
 
   it("should get no cookies for not found cookie name", () => {
-    const result = cookie().getOne("cookie", testCookie)
+    const result = getOneCookie("cookie", testCookie)
     expect(result.size).toBe(0)
   })
 })
 
 describe("serialize cookie", () => {
   it("should serialize cookie", () => {
-    const result = cookie().serialize("cookie_one", "value-one", {})
+    const result = serializeCookie("cookie_one", "value-one", {})
     expect(result).toBe("cookie_one=value-one")
   })
 
   it("should serialize cookie with all options", () => {
-    const result = cookie().serialize("__Secure-cookie_one", "value-one", {
+    const result = serializeCookie("__Secure-cookie_one", "value-one", {
       path: "/",
       secure: true,
       domain: "test.com",
@@ -59,17 +59,17 @@ describe("serialize cookie", () => {
   })
 
   it("should serialize cookie with max-age 0", () => {
-    const result = cookie().serialize("cookie_one", "value-one", { maxAge: 0 })
+    const result = serializeCookie("cookie_one", "value-one", { maxAge: 0 })
     expect(result).toBe("cookie_one=value-one; Max-Age=0")
   })
 
   it("should serialize cookie with max-age -1", () => {
-    const result = cookie().serialize("cookie_one", "value-one", { maxAge: -1 })
+    const result = serializeCookie("cookie_one", "value-one", { maxAge: -1 })
     expect(result).toBe("cookie_one=value-one")
   })
 
   it("should serialized cookie with host and path options", () => {
-    const result = cookie().serialize("__Host-cookie_one", "value-one", {
+    const result = serializeCookie("__Host-cookie_one", "value-one", {
       path: "/",
       secure: true,
     })
@@ -78,7 +78,7 @@ describe("serialize cookie", () => {
 
   it("should throw an error with insecure option", () => {
     expect(() => {
-      cookie().serialize("__Secure-cookie_one", "value-one", {
+      serializeCookie("__Secure-cookie_one", "value-one", {
         secure: false,
       })
     }).toThrowError("__Secure- cookie must have Secure attribute")
@@ -86,7 +86,7 @@ describe("serialize cookie", () => {
 
   it("should throw an error with host insecure option", () => {
     expect(() => {
-      cookie().serialize("__Host-cookie_one", "value-one", {
+      serializeCookie("__Host-cookie_one", "value-one", {
         secure: false,
       })
     }).toThrowError("__Host- cookie must have Secure attribute")
@@ -94,7 +94,7 @@ describe("serialize cookie", () => {
 
   it("should throw an error with host invalid domain option", () => {
     expect(() => {
-      cookie().serialize("__Host-cookie_one", "value-one", {
+      serializeCookie("__Host-cookie_one", "value-one", {
         path: "/",
         secure: true,
         domain: "test.com",
@@ -104,7 +104,7 @@ describe("serialize cookie", () => {
 
   it("should throw an error with host invalid path option", () => {
     expect(() => {
-      cookie().serialize("__Host-cookie_one", "value-one", {
+      serializeCookie("__Host-cookie_one", "value-one", {
         path: "/test",
         secure: true,
       })
@@ -113,7 +113,7 @@ describe("serialize cookie", () => {
 
   it("should throw an error with max-age invalid option", () => {
     expect(() => {
-      cookie().serialize("cookie_one", "value-one", {
+      serializeCookie("cookie_one", "value-one", {
         maxAge: 3600 * 24 * 402,
       })
     }).toThrowError("Cookie Max-Age attribute must not be greater than 400 days")
@@ -121,7 +121,7 @@ describe("serialize cookie", () => {
 
   it("should throw an error with expires invalid option", () => {
     expect(() => {
-      cookie().serialize("cookie_one", "value-one", {
+      serializeCookie("cookie_one", "value-one", {
         expires: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 402),
       })
     }).toThrowError("Cookie Expires attribute must not be greater than 400 days")
@@ -129,7 +129,7 @@ describe("serialize cookie", () => {
 
   it("should throw an error with invalid partitioned options", () => {
     expect(() => {
-      cookie().serialize("cookie_one", "value-one", {
+      serializeCookie("cookie_one", "value-one", {
         secure: false,
         partitioned: true,
       })

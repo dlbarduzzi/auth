@@ -1,9 +1,9 @@
-const HOST_PREFIX = "__Host-"
-const SECURE_PREFIX = "__Secure-"
+export const HOST_PREFIX = "__Host-"
+export const SECURE_PREFIX = "__Secure-"
 
 type Cookie = Map<string, string>
 
-type CookieOptions = {
+export type CookieOptions = {
   domain?: string
   expires?: Date
   httpOnly?: boolean
@@ -116,16 +116,14 @@ function serialize(name: string, value: string, options: CookieOptions): string 
   return cookie
 }
 
-export function cookie() {
-  return {
-    getAll: (cookie: string) => {
-      return parse({ cookie })
-    },
-    getOne: (name: string, cookie: string) => {
-      return parse({ name, cookie })
-    },
-    serialize,
-    hostPrefix: HOST_PREFIX,
-    securePrefix: SECURE_PREFIX,
-  }
+export function getAllCookies(cookie: string) {
+  return parse({ cookie })
+}
+
+export function getOneCookie(name: string, cookie: string) {
+  return parse({ name, cookie })
+}
+
+export function serializeCookie(name: string, value: string, options: CookieOptions) {
+  return serialize(name, value, options)
 }
