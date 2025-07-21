@@ -1,24 +1,19 @@
 import { hex } from "./hex"
 import { subtle } from "uncrypto"
 
-type Secret = string | BufferSource
-
 const algorithm = { name: "HMAC", hash: { name: "SHA-256" } }
 
 export const hmac = {
-  key: async (secret: Secret) => {
-    secret = typeof secret === "string"
-      ? new TextEncoder().encode(secret)
-      : secret
+  key: async (secret: string) => {
     return await subtle.importKey(
       "raw",
-      secret,
+      new TextEncoder().encode(secret),
       algorithm,
       false,
       ["sign", "verify"],
     )
   },
-  sign: async (value: string, secret: Secret) => {
+  sign: async (value: string, secret: string) => {
     const key = await hmac.key(secret)
     const buffer = await subtle.sign(
       algorithm.name,
@@ -27,7 +22,7 @@ export const hmac = {
     )
     return hex.encode(buffer)
   },
-  verify: async (value: string, secret: Secret, signature: string) => {
+  verify: async (value: string, secret: string, signature: string) => {
     const data = new Uint8Array(signature.length / 2)
     for (let i = 0; i < data.length; i++) {
       data[i] = Number.parseInt(signature.slice(i * 2, i * 2 + 2), 16)
