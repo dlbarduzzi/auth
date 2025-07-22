@@ -1,8 +1,8 @@
 import { setCookie, setSignedCookie } from "@/core/cookie"
 
-async function examples() {
-  const AUTH_SECRET = "testing-auth-secret"
+const AUTH_SECRET = "testing-auth-secret"
 
+async function cookieExamples() {
   const request = new Request("https://example.com")
   const headers = request.headers
 
@@ -29,4 +29,4 @@ async function examples() {
   console.warn(headers)
 }
 
-examples()
+cookieExamples()

@@ -8,7 +8,7 @@ describe("hmac key", () => {
   let signature: string
 
   it("should import HMAC crypto key", async () => {
-    const key = await hmac.key(testSecret)
+    const key = await hmac.key(testSecret, "sign")
     expect(key).toBeDefined()
     expect(key.algorithm.name).toBe("HMAC")
   })
