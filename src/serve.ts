@@ -5,7 +5,7 @@ const request = new Request("https://example.com")
 const headers = request.headers
 
 async function cookieExamples() {
-  await setSessionCookie({ user, session }, headers, true)
+  await setSessionCookie({ user, session }, headers)
   console.warn(headers)
 }
 

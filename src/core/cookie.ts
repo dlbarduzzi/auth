@@ -2,10 +2,16 @@ import type { CookieOptions } from "@/tools/http/cookie"
 import type { UserSchema, SessionSchema } from "./schemas"
 
 import { hmac } from "@/tools/crypto/hmac"
-import { serializeCookie, SECURE_PREFIX, getOneCookie } from "@/tools/http/cookie"
+import { encodeBase64url } from "@/tools/crypto/base64"
+
+import {
+  getOneCookie,
+  serializeCookie,
+  SECURE_PREFIX,
+} from "@/tools/http/cookie"
 
 import { env } from "./env"
-import { createTime } from "./time"
+import { createTime, getDate } from "./time"
 
 type CookieParams = {
   name: string
@@ -54,7 +60,10 @@ function createCookieOptions(options?: CookieOptions): CookieOptions {
 const cookies = {
   data: {
     name: createCookieName("session_data"),
-    options: (options?: CookieOptions) => createCookieOptions(options),
+    options: (options?: CookieOptions) => createCookieOptions({
+      maxAge: createTime(5, "m").toSeconds(),
+      ...options,
+    }),
   },
   token: {
     name: createCookieName("session_token"),
@@ -65,7 +74,10 @@ const cookies = {
   },
   remember: {
     name: createCookieName("session_remember"),
-    options: (options?: CookieOptions) => createCookieOptions(options),
+    options: (options?: CookieOptions) => createCookieOptions({
+      maxAge: createTime(7, "d").toSeconds(),
+      ...options,
+    }),
   },
 }
 
@@ -98,11 +110,46 @@ async function getSignedCookie(name: string, secret: string, headers: Headers) {
   return value
 }
 
+async function setCachedCookie(
+  data: { user: UserSchema, session: SessionSchema },
+  secret: string,
+  headers: Headers,
+) {
+  const sessionDataCookieName = cookies.data.name
+  const sessionDataCookieOptions = cookies.data.options()
+
+  const maxAge = sessionDataCookieOptions.maxAge
+    ? sessionDataCookieOptions.maxAge
+    : createTime(5, "m").toSeconds()
+
+  const expiresAt = getDate(maxAge, "sec").getTime()
+  const signature = await hmac.sign(JSON.stringify({ ...data, expiresAt }), secret)
+
+  const payload = encodeBase64url(JSON.stringify({
+    data,
+    expiresAt,
+    signature,
+  }), false)
+
+  if (payload.length > 4093) {
+    throw new Error(`Session data is too large (${payload.length})`)
+  }
+
+  setCookie({
+    name: sessionDataCookieName,
+    value: payload,
+    headers,
+    options: sessionDataCookieOptions,
+  })
+}
+
 export async function setSessionCookie(
   data: { user: UserSchema, session: SessionSchema },
   headers: Headers,
   remember?: boolean,
 ) {
+  const doNotRemember = "false"
+
   const sessionTokenCookieName = cookies.token.name
   const sessionRememberCookieName = cookies.remember.name
 
@@ -111,7 +158,10 @@ export async function setSessionCookie(
     env.AUTH_SECRET,
     headers,
   )
-  console.warn({ rememberCookie })
+
+  remember = remember !== undefined
+    ? remember
+    : rememberCookie !== doNotRemember
 
   await setSignedCookie({
     name: sessionTokenCookieName,
@@ -124,14 +174,18 @@ export async function setSessionCookie(
     }),
   })
 
-  await setSignedCookie({
-    name: sessionRememberCookieName,
-    value: "false",
-    secret: env.AUTH_SECRET,
-    headers,
-    options: cookies.token.options({
-      secure: sessionRememberCookieName.startsWith(SECURE_PREFIX),
-      maxAge: 100000,
-    }),
-  })
+  if (!remember) {
+    await setSignedCookie({
+      name: sessionRememberCookieName,
+      value: doNotRemember,
+      secret: env.AUTH_SECRET,
+      headers,
+      options: cookies.remember.options({
+        secure: sessionRememberCookieName.startsWith(SECURE_PREFIX),
+        maxAge: createTime(7, "d").toSeconds(),
+      }),
+    })
+  }
+
+  await setCachedCookie(data, env.AUTH_SECRET, headers)
 }
