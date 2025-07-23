@@ -1,7 +1,10 @@
 import type { CookieOptions } from "@/tools/http/cookie"
+import type { UserSchema, SessionSchema } from "./schemas"
 
 import { hmac } from "@/tools/crypto/hmac"
 import { serializeCookie } from "@/tools/http/cookie"
+
+import { env } from "./env"
 
 type CookieParams = {
   name: string
@@ -10,7 +13,7 @@ type CookieParams = {
   options: CookieOptions
 }
 
-export function setCookie({
+function setCookie({
   name,
   value,
   headers,
@@ -20,14 +23,30 @@ export function setCookie({
   headers.append("Set-Cookie", cookie)
 }
 
-export async function setSignedCookie(secret: string, {
+async function setSignedCookie({
   name,
   value,
+  secret,
   headers,
   options,
-}: CookieParams) {
+}: CookieParams & { secret: string }) {
   const signature = await hmac.sign(value, secret)
   value = `${value}.${signature}`
-  const cookie = serializeCookie(name, value, options)
-  headers.append("Set-Cookie", cookie)
+  setCookie({ name, value, headers, options })
+}
+
+export async function setSessionCookie(
+  data: { user: UserSchema, session: SessionSchema },
+  headers: Headers,
+  rememberMe?: boolean,
+) {
+  console.warn({ rememberMe })
+
+  await setSignedCookie({
+    name: "session_token",
+    value: data.session.token,
+    secret: env.AUTH_SECRET,
+    headers,
+    options: {},
+  })
 }
