@@ -10,7 +10,7 @@ const schema = z.object({
   APP_URL: z.url(),
   APP_PORT: z.coerce.number().int().positive(),
   AUTH_SECRET: z.string().min(12),
-  COOKIE_PREFIX: z.string().default("my-auth"),
+  COOKIE_PREFIX: z.string().default("super-auth"),
 })
 
 // eslint-disable-next-line node/no-process-env

@@ -2,7 +2,7 @@ import type { CookieOptions } from "@/tools/http/cookie"
 import type { UserSchema, SessionSchema } from "./schemas"
 
 import { hmac } from "@/tools/crypto/hmac"
-import { serializeCookie, SECURE_PREFIX } from "@/tools/http/cookie"
+import { serializeCookie, SECURE_PREFIX, getOneCookie } from "@/tools/http/cookie"
 
 import { env } from "./env"
 import { createTime } from "./time"
@@ -69,6 +69,35 @@ const cookies = {
   },
 }
 
+async function getSignedCookie(name: string, secret: string, headers: Headers) {
+  const cookie = headers.get("Cookie")
+  if (!cookie) {
+    return null
+  }
+
+  const result = await getOneCookie(name, cookie)
+
+  const cookieValue = result.get(name)
+  if (!cookieValue) {
+    return null
+  }
+
+  const index = cookieValue.lastIndexOf(".")
+  if (index < 0) {
+    return null
+  }
+
+  const value = cookieValue.substring(0, index)
+  const signature = cookieValue.substring(index + 1)
+
+  const isVerified = await hmac.verify(value, secret, signature)
+  if (!isVerified) {
+    return null
+  }
+
+  return value
+}
+
 export async function setSessionCookie(
   data: { user: UserSchema, session: SessionSchema },
   headers: Headers,
@@ -76,6 +105,13 @@ export async function setSessionCookie(
 ) {
   const sessionTokenCookieName = cookies.token.name
   const sessionRememberCookieName = cookies.remember.name
+
+  const rememberCookie = await getSignedCookie(
+    sessionRememberCookieName,
+    env.AUTH_SECRET,
+    headers,
+  )
+  console.warn({ rememberCookie })
 
   await setSignedCookie({
     name: sessionTokenCookieName,
@@ -95,7 +131,7 @@ export async function setSessionCookie(
     headers,
     options: cookies.token.options({
       secure: sessionRememberCookieName.startsWith(SECURE_PREFIX),
-      maxAge: 0,
+      maxAge: 100000,
     }),
   })
 }
