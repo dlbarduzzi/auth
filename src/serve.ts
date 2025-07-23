@@ -1,10 +1,14 @@
+import { generateId } from "@/core/security"
 import { setCookie, setSignedCookie } from "@/core/cookie"
 
 const AUTH_SECRET = "testing-auth-secret"
 
-async function cookieExamples() {
+async function setCookieExamples() {
   const request = new Request("https://example.com")
   const headers = request.headers
+
+  const token = generateId(32)
+  console.warn({ token })
 
   setCookie({
     name: "not_signed_session",
@@ -29,4 +33,8 @@ async function cookieExamples() {
   console.warn(headers)
 }
 
-cookieExamples()
+async function run() {
+  await setCookieExamples()
+}
+
+run()

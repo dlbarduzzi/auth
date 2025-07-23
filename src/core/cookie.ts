@@ -28,6 +28,6 @@ export async function setSignedCookie(secret: string, {
 }: CookieParams) {
   const signature = await hmac.sign(value, secret)
   value = `${value}.${signature}`
-  const serialized = serializeCookie(name, value, options)
-  headers.append("Set-Cookie", serialized)
+  const cookie = serializeCookie(name, value, options)
+  headers.append("Set-Cookie", cookie)
 }
