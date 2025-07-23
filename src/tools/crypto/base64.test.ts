@@ -52,4 +52,13 @@ describe("base64", () => {
       expect(() => decodeBase64("?")).toThrowError("Invalid base64 character: ?")
     })
   })
+
+  describe("base64 encode and decode", () => {
+    it("should encode and decode unicode characters", () => {
+      const input = "🔥"
+      const encoded = encodeBase64(input)
+      const decoded = decodeBase64(encoded)
+      expect(decoded.toString()).toBe("240,159,148,165")
+    })
+  })
 })
