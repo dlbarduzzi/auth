@@ -2,9 +2,10 @@ import type { CookieOptions } from "@/tools/http/cookie"
 import type { UserSchema, SessionSchema } from "./schemas"
 
 import { hmac } from "@/tools/crypto/hmac"
-import { serializeCookie } from "@/tools/http/cookie"
+import { serializeCookie, SECURE_PREFIX } from "@/tools/http/cookie"
 
 import { env } from "./env"
+import { createTime } from "./time"
 
 type CookieParams = {
   name: string
@@ -35,18 +36,66 @@ async function setSignedCookie({
   setCookie({ name, value, headers, options })
 }
 
+function createCookieName(name: string) {
+  const secure = env.APP_URL.startsWith("https://") || env.NODE_ENV === "production"
+  const prefix = secure ? SECURE_PREFIX : ""
+  return `${prefix}${env.COOKIE_PREFIX}.${name}`
+}
+
+function createCookieOptions(options?: CookieOptions): CookieOptions {
+  return {
+    path: "/",
+    sameSite: "Lax",
+    httpOnly: true,
+    ...options,
+  }
+}
+
+const cookies = {
+  data: {
+    name: createCookieName("session_data"),
+    options: (options?: CookieOptions) => createCookieOptions(options),
+  },
+  token: {
+    name: createCookieName("session_token"),
+    options: (options?: CookieOptions) => createCookieOptions({
+      maxAge: createTime(7, "d").toSeconds(),
+      ...options,
+    }),
+  },
+  remember: {
+    name: createCookieName("session_remember"),
+    options: (options?: CookieOptions) => createCookieOptions(options),
+  },
+}
+
 export async function setSessionCookie(
   data: { user: UserSchema, session: SessionSchema },
   headers: Headers,
-  rememberMe?: boolean,
+  remember?: boolean,
 ) {
-  console.warn({ rememberMe })
+  const sessionTokenCookieName = cookies.token.name
+  const sessionRememberCookieName = cookies.remember.name
 
   await setSignedCookie({
-    name: "session_token",
+    name: sessionTokenCookieName,
     value: data.session.token,
     secret: env.AUTH_SECRET,
     headers,
-    options: {},
+    options: cookies.token.options({
+      secure: sessionTokenCookieName.startsWith(SECURE_PREFIX),
+      maxAge: remember ? createTime(7, "d").toSeconds() : undefined,
+    }),
+  })
+
+  await setSignedCookie({
+    name: sessionRememberCookieName,
+    value: "false",
+    secret: env.AUTH_SECRET,
+    headers,
+    options: cookies.token.options({
+      secure: sessionRememberCookieName.startsWith(SECURE_PREFIX),
+      maxAge: 0,
+    }),
   })
 }
