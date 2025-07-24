@@ -1,8 +1,10 @@
 import type { CookieOptions } from "@/tools/http/cookie"
 import type { UserSchema, SessionSchema } from "./schemas"
 
+import z from "zod"
+
 import { hmac } from "@/tools/crypto/hmac"
-import { encodeBase64url } from "@/tools/crypto/base64"
+import { decodeBase64url, encodeBase64url } from "@/tools/crypto/base64"
 
 import {
   getOneCookie,
@@ -11,7 +13,8 @@ import {
 } from "@/tools/http/cookie"
 
 import { env } from "./env"
-import { createTime, getDate } from "./time"
+import { sessionSchema, userSchema } from "./schemas"
+import { createTime, getDate, isStrDate } from "./time"
 
 type CookieParams = {
   name: string
@@ -82,7 +85,7 @@ const cookies = {
 }
 
 async function getSignedCookie(name: string, secret: string, headers: Headers) {
-  const cookie = headers.get("Cookie")
+  const cookie = headers.get("cookie")
   if (!cookie) {
     return null
   }
@@ -141,6 +144,72 @@ async function setCachedCookie(
     headers,
     options: sessionDataCookieOptions,
   })
+}
+
+export async function getCachedCookie(secret: string, headers: Headers) {
+  const cookie = headers.get("cookie")
+  if (!cookie) {
+    return null
+  }
+
+  const name = cookies.data.name
+  const result = await getOneCookie(name, cookie)
+
+  const cookieValue = result.get(name)
+  if (!cookieValue) {
+    return null
+  }
+
+  let payload: unknown
+  try {
+    payload = JSON.parse(decodeBase64url(cookieValue, "string") as string)
+  }
+  catch {
+    payload = null
+  }
+
+  if (!payload) {
+    return null
+  }
+
+  const schema = z.object({
+    data: z.object({
+      user: userSchema.extend({
+        createdAt: z
+          .string()
+          .or(z.date())
+          .refine(value => isStrDate(value))
+          .transform(value => new Date(value)),
+      }),
+      session: sessionSchema.extend({
+        createdAt: z
+          .string()
+          .or(z.date())
+          .refine(value => isStrDate(value))
+          .transform(value => new Date(value)),
+      }),
+    }),
+    expiresAt: z.number(),
+    signature: z.string(),
+  })
+
+  const parsed = schema.safeParse(payload)
+  if (!parsed.success) {
+    return null
+  }
+
+  const { data, expiresAt, signature } = parsed.data
+
+  const isVerified = await hmac.verify(JSON.stringify({
+    ...data,
+    expiresAt,
+  }), secret, signature)
+
+  if (!isVerified) {
+    return null
+  }
+
+  return data
 }
 
 export async function setSessionCookie(

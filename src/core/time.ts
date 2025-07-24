@@ -27,3 +27,8 @@ export function createTime(value: number, format: TimeFormat) {
 export function getDate(span: number, unit: "sec" | "ms" = "ms") {
   return new Date(Date.now() + (unit === "sec" ? span * 1000 : span))
 }
+
+export function isStrDate(str: string | Date) {
+  const date = new Date(str)
+  return date instanceof Date && !Number.isNaN(date.getTime())
+}
