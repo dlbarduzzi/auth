@@ -1,3 +1,4 @@
+import type { SetHeaders } from "./types"
 import type { CookieOptions } from "@/tools/http/cookie"
 import type { UserSchema, SessionSchema } from "./schemas"
 
@@ -19,7 +20,7 @@ import { createTime, getDate, isStrDate } from "./time"
 type CookieParams = {
   name: string
   value: string
-  headers: Headers
+  headers: SetHeaders
   options: CookieOptions
 }
 
@@ -30,7 +31,8 @@ function setCookie({
   options,
 }: CookieParams) {
   const cookie = serializeCookie(name, value, options)
-  headers.append("Set-Cookie", cookie)
+  // headers.append("Set-Cookie", cookie)
+  headers("Set-Cookie", cookie, { append: true })
 }
 
 async function setSignedCookie({
@@ -116,7 +118,7 @@ async function getSignedCookie(name: string, secret: string, headers: Headers) {
 async function setCachedCookie(
   data: { user: UserSchema, session: SessionSchema },
   secret: string,
-  headers: Headers,
+  headers: SetHeaders,
 ) {
   const sessionDataCookieName = cookies.data.name
   const sessionDataCookieOptions = cookies.data.options()
@@ -212,11 +214,17 @@ export async function getCachedCookie(secret: string, headers: Headers) {
   return data
 }
 
-export async function setSessionCookie(
-  data: { user: UserSchema, session: SessionSchema },
-  headers: Headers,
-  remember?: boolean,
-) {
+export async function setSessionCookie({ data, headers, remember }: {
+  data: {
+    user: UserSchema
+    session: SessionSchema
+  }
+  headers: {
+    get: Headers
+    set: SetHeaders
+  }
+  remember?: boolean
+}) {
   const doNotRemember = "false"
 
   const sessionTokenCookieName = cookies.token.name
@@ -225,7 +233,7 @@ export async function setSessionCookie(
   const rememberCookie = await getSignedCookie(
     sessionRememberCookieName,
     env.AUTH_SECRET,
-    headers,
+    headers.get,
   )
 
   remember = remember !== undefined
@@ -236,7 +244,7 @@ export async function setSessionCookie(
     name: sessionTokenCookieName,
     value: data.session.token,
     secret: env.AUTH_SECRET,
-    headers,
+    headers: headers.set,
     options: cookies.token.options({
       secure: sessionTokenCookieName.startsWith(SECURE_PREFIX),
       maxAge: remember ? createTime(7, "d").toSeconds() : undefined,
@@ -248,7 +256,7 @@ export async function setSessionCookie(
       name: sessionRememberCookieName,
       value: doNotRemember,
       secret: env.AUTH_SECRET,
-      headers,
+      headers: headers.set,
       options: cookies.remember.options({
         secure: sessionRememberCookieName.startsWith(SECURE_PREFIX),
         maxAge: createTime(7, "d").toSeconds(),
@@ -256,5 +264,5 @@ export async function setSessionCookie(
     })
   }
 
-  await setCachedCookie(data, env.AUTH_SECRET, headers)
+  await setCachedCookie(data, env.AUTH_SECRET, headers.set)
 }

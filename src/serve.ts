@@ -1,20 +1,13 @@
-import { env } from "./core/env"
-import { user, session } from "./mock"
-import { getCachedCookie, setSessionCookie } from "@/core/cookie"
+import { serve } from "@hono/node-server"
 
-const request = new Request("https://example.com")
-const headers = request.headers
+import { env } from "@/core/env"
+import { logger } from "@/core/logger"
 
-async function cookieExamples() {
-  await setSessionCookie({ user, session }, headers)
-  console.warn(headers)
+import { app } from "./app"
 
-  const data = await getCachedCookie(env.AUTH_SECRET, headers)
-  console.warn({ data })
-}
-
-async function run() {
-  await cookieExamples()
-}
-
-run()
+serve({
+  port: env.APP_PORT,
+  fetch: app.fetch,
+}, info => {
+  logger.info("app running", { port: info.port })
+})
