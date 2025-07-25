@@ -1,6 +1,6 @@
 import type { SetHeaders } from "./types"
 import type { CookieOptions } from "@/tools/http/cookie"
-import type { UserSchema, SessionSchema } from "./schemas"
+import type { UserSchema, SessionSchema } from "@/db/schemas"
 
 import z from "zod"
 
@@ -14,8 +14,10 @@ import {
 } from "@/tools/http/cookie"
 
 import { env } from "./env"
-import { sessionSchema, userSchema } from "./schemas"
-import { createTime, getDate, isStrDate } from "./time"
+import { strToDateSchema } from "./schemas"
+import { createTime, getDate } from "./time"
+
+import { sessionSchema, userSchema } from "@/db/schemas"
 
 type CookieParams = {
   name: string
@@ -177,18 +179,13 @@ export async function getCachedCookie(secret: string, headers: Headers) {
   const schema = z.object({
     data: z.object({
       user: userSchema.extend({
-        createdAt: z
-          .string()
-          .or(z.date())
-          .refine(value => isStrDate(value))
-          .transform(value => new Date(value)),
+        createdAt: strToDateSchema,
+        updatedAt: strToDateSchema,
       }),
       session: sessionSchema.extend({
-        createdAt: z
-          .string()
-          .or(z.date())
-          .refine(value => isStrDate(value))
-          .transform(value => new Date(value)),
+        expiresAt: strToDateSchema,
+        createdAt: strToDateSchema,
+        updatedAt: strToDateSchema,
       }),
     }),
     expiresAt: z.number(),
