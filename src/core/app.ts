@@ -3,6 +3,7 @@ import type { App, AppEnv } from "./types"
 import { Hono } from "hono"
 import { requestId } from "hono/request-id"
 
+import { db } from "@/db/connect"
 import { logger } from "@/core/logger"
 import { status, toStatusText } from "@/tools/http/status"
 
@@ -14,6 +15,7 @@ export function bootstrap(app: App) {
   app.use("*", requestId())
 
   app.use("*", async (ctx, next) => {
+    ctx.set("db", db)
     ctx.set("logger", logger)
     await next()
   })
@@ -35,11 +37,9 @@ export function bootstrap(app: App) {
   })
 
   app.onError((err, ctx) => {
-    ctx.var.logger.error(err.message, {
-      cause: err.cause,
-      stack: err.stack,
-      status: "STATUS_UNHANDLED_EXCEPTION",
-    })
+    const { cause, stack, message } = err
+    ctx.var.logger.error(message, { cause, stack })
+
     return ctx.json(
       {
         ok: false,

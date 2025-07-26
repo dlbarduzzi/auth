@@ -32,3 +32,14 @@ export function isStrDate(str: string | Date) {
   const date = new Date(str)
   return date instanceof Date && !Number.isNaN(date.getTime())
 }
+
+export function constantTimeEqual(a: Uint8Array, b: Uint8Array) {
+  if (a.length !== b.length) {
+    return false
+  }
+  let c = 0
+  for (let i = 0; i < a.length; i++) {
+    c |= a[i]! ^ b[i]!
+  }
+  return c === 0
+}
